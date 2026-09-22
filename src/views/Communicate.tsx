@@ -65,7 +65,7 @@ function Talk({
     pressCommitHoldMs: settings.pressCommitHoldMs,
     previewHoldMs: settings.previewHoldMs,
     onIn: () => dispatch({ type: "pressIn" }),
-    onCommit: () => dispatch({ type: "pressCommit" }),
+    onCommit: () => dispatch({ type: "pressCommit", ready: true }),
   });
 
   useSwitchInput({

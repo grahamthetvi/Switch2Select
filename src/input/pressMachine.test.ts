@@ -153,6 +153,99 @@ describe("rotating single target", () => {
     expect(during.phase).toBe("speaking");
     expect(during.speechSeq).toBe(state.speechSeq);
   });
+
+  it("a paused picture can finish appearing and then be spoken", () => {
+    let state = reducePress(initialPressState(3), { type: "pause" }, config);
+    state = reducePress(state, { type: "pressIn" }, config);
+    expect(state.phase).toBe("rotating");
+    state = reducePress(state, { type: "tick", dt: config.appearDwellMs }, config);
+    expect(state.visibleMs).toBe(config.appearDwellMs);
+    expect(state.index).toBe(0);
+    state = reducePress(state, { type: "tick", dt: config.rotationMs }, config);
+    expect(state.index).toBe(0);
+    expect(state.phase).toBe("rotating");
+    state = reducePress(state, { type: "pressIn" }, config);
+    state = reducePress(state, { type: "tick", dt: config.previewHoldMs }, config);
+    state = reducePress(state, { type: "pressCommit" }, config);
+    expect(state.phase).toBe("speaking");
+    expect(state.speech).toBe("utterance");
+    expect(state.paused).toBe(true);
+  });
+
+  it("paused rotation does not advance", () => {
+    let state = reducePress(ready(), { type: "pause" }, config);
+    state = reducePress(state, { type: "tick", dt: config.rotationMs * 3 }, config);
+    expect(state.paused).toBe(true);
+    expect(state.phase).toBe("rotating");
+    expect(state.index).toBe(0);
+    expect(state.visibleMs).toBe(config.appearDwellMs);
+  });
+
+  it("a light press then a deep press speaks the frozen picture", () => {
+    let state = reducePress(ready(), { type: "pause" }, config);
+    state = reducePress(state, { type: "pressIn" }, config);
+    state = reducePress(state, { type: "tick", dt: config.previewHoldMs }, config);
+    expect(state.phase).toBe("latched");
+    expect(state.paused).toBe(true);
+    expect(state.index).toBe(0);
+    state = reducePress(state, { type: "tick", dt: config.latchTimeoutMs }, config);
+    expect(state.phase).toBe("latched");
+    state = reducePress(state, { type: "pressCommit" }, config);
+    expect(state.phase).toBe("speaking");
+    expect(state.speech).toBe("utterance");
+    expect(state.paused).toBe(true);
+    expect(state.index).toBe(0);
+  });
+
+  it("does not run the post-speak clock while paused", () => {
+    const auto = { ...config, autoResumeAfterSpeak: true };
+    let state = reducePress(ready(), { type: "pressIn" }, auto);
+    state = reducePress(state, { type: "tick", dt: auto.previewHoldMs }, auto);
+    state = reducePress(state, { type: "pressCommit" }, auto);
+    state = reducePress(state, { type: "speechDone" }, auto);
+    state = reducePress(state, { type: "pause" }, auto);
+    state = reducePress(state, { type: "tick", dt: auto.speakHoldMs }, auto);
+    expect(state.phase).toBe("holding");
+    expect(state.index).toBe(0);
+    expect(state.paused).toBe(true);
+  });
+
+  it("cancel undoes the press and stays paused", () => {
+    let state = reducePress(ready(), { type: "pause" }, config);
+    state = reducePress(state, { type: "pressIn" }, config);
+    state = reducePress(state, { type: "cancel" }, config);
+    expect(state.phase).toBe("rotating");
+    expect(state.paused).toBe(true);
+    expect(state.speech).toBe("stop");
+    expect(state.index).toBe(0);
+    expect(state.confirm).toBe(false);
+  });
+
+  it("escape while rotating and paused does not resume", () => {
+    let state = reducePress(ready(), { type: "pause" }, config);
+    state = reducePress(state, { type: "cancel" }, config);
+    expect(state.paused).toBe(true);
+    expect(state.phase).toBe("rotating");
+    expect(state.index).toBe(0);
+    expect(state.speech).toBeNull();
+  });
+
+  it("a ready pointer commit speaks before latchMs catches slow frames", () => {
+    const latched = reducePress(ready(), { type: "pressIn" }, config);
+    const early = reducePress(latched, { type: "tick", dt: 1 }, config);
+    const bounced = reducePress(early, { type: "pressCommit" }, config);
+    expect(bounced.phase).toBe("latched");
+    expect(bounced.speech).not.toBe("utterance");
+    const committed = reducePress(early, { type: "pressCommit", ready: true }, config);
+    expect(committed.phase).toBe("speaking");
+    expect(committed.speech).toBe("utterance");
+  });
+
+  it("ready does not skip the latch", () => {
+    const next = reducePress(ready(), { type: "pressCommit", ready: true }, config);
+    expect(next.phase).toBe("rotating");
+    expect(next.speech).toBeNull();
+  });
 });
 
 describe("two-choice", () => {
@@ -212,5 +305,67 @@ describe("two-choice", () => {
     expect(later.offer).toBe(1);
     const prev = reduceChoice(later, { type: "prev" }, choiceConfig);
     expect(prev.offer).toBe(0);
+  });
+
+  it("pause lets the pair finish appearing without moving the offer", () => {
+    let state = reduceChoice(initialChoiceState(), { type: "pause" }, choiceConfig);
+    state = reduceChoice(state, { type: "pressIn" }, choiceConfig);
+    expect(state.phase).toBe("idle");
+    state = reduceChoice(state, { type: "tick", dt: choiceConfig.appearDwellMs + 4000 }, choiceConfig);
+    expect(state.visibleMs).toBe(choiceConfig.appearDwellMs);
+    expect(state.offer).toBe(0);
+    state = reduceChoice(state, { type: "pressIn", side: 1 }, choiceConfig);
+    expect(state.phase).toBe("latched");
+    expect(state.side).toBe(1);
+    expect(state.paused).toBe(true);
+  });
+
+  it("speaks a paused picture after the preview hold without moving the offer", () => {
+    let state = reduceChoice(shown(), { type: "pause" }, choiceConfig);
+    state = reduceChoice(state, { type: "pressIn", side: 1 }, choiceConfig);
+    state = reduceChoice(state, { type: "tick", dt: choiceConfig.previewHoldMs }, choiceConfig);
+    expect(state.offer).toBe(1);
+    expect(state.visibleMs).toBe(choiceConfig.appearDwellMs);
+    state = reduceChoice(state, { type: "pressCommit", effect: "speak" }, choiceConfig);
+    expect(state.phase).toBe("speaking");
+    expect(state.speech).toBe("utterance");
+    expect(state.paused).toBe(true);
+    expect(state.side).toBe(1);
+  });
+
+  it("cancel while paused stays paused", () => {
+    let state = reduceChoice(shown(), { type: "pause" }, choiceConfig);
+    state = reduceChoice(state, { type: "cancel" }, choiceConfig);
+    expect(state.paused).toBe(true);
+    expect(state.phase).toBe("idle");
+    state = reduceChoice(state, { type: "pressIn" }, choiceConfig);
+    state = reduceChoice(state, { type: "cancel" }, choiceConfig);
+    expect(state.paused).toBe(true);
+    expect(state.phase).toBe("idle");
+    expect(state.speech).toBe("stop");
+    expect(state.side).toBeNull();
+  });
+
+  it("ignores a pointer commit after the latched side changes", () => {
+    let state = reduceChoice(shown(), { type: "pressIn", side: 0 }, choiceConfig);
+    state = reduceChoice(state, { type: "pressIn", side: 1 }, choiceConfig);
+    const stale = reduceChoice(state, {
+      type: "pressCommit",
+      effect: "open",
+      side: 0,
+      ready: true,
+    }, choiceConfig);
+    expect(stale.phase).toBe("latched");
+    expect(stale.side).toBe(1);
+    expect(stale.nav).toBeNull();
+    const current = reduceChoice(stale, {
+      type: "pressCommit",
+      effect: "speak",
+      side: 1,
+      ready: true,
+    }, choiceConfig);
+    expect(current.phase).toBe("speaking");
+    expect(current.side).toBe(1);
+    expect(current.speech).toBe("utterance");
   });
 });

@@ -94,12 +94,22 @@ export function TwoChoice({
   const leftRef = usePointerPress({
     ...pointer,
     onIn: () => dispatch({ type: "pressIn", side: 0 }),
-    onCommit: () => dispatch({ type: "pressCommit", effect: effectFor(pairRef.current[0]) }),
+    onCommit: () => dispatch({
+      type: "pressCommit",
+      effect: effectFor(pairRef.current[0]),
+      side: 0,
+      ready: true,
+    }),
   });
   const rightRef = usePointerPress({
     ...pointer,
     onIn: () => dispatch({ type: "pressIn", side: 1 }),
-    onCommit: () => dispatch({ type: "pressCommit", effect: effectFor(pairRef.current[1]) }),
+    onCommit: () => dispatch({
+      type: "pressCommit",
+      effect: effectFor(pairRef.current[1]),
+      side: 1,
+      ready: true,
+    }),
   });
 
   function speakAgain() {

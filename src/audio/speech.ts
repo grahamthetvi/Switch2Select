@@ -8,7 +8,8 @@ export class Speaker {
   private token = 0;
   private audio: HTMLAudioElement | null = null;
   private audioUrl: string | null = null;
-  private speaking = false;
+  private utteranceArmed = false;
+  private releaseCurrent: (() => void) | null = null;
 
   stop(): void {
     this.token += 1;
@@ -17,33 +18,46 @@ export class Speaker {
 
   speakText(text: string, options: SpeakOptions): Promise<void> {
     const token = ++this.token;
-    const interrupt = this.speaking || this.audio !== null;
+    const gap = this.utteranceArmed || this.audio !== null;
     this.hardStop();
     const phrase = text.trim();
     if (!phrase || typeof window === "undefined" || !window.speechSynthesis) {
       return Promise.resolve();
     }
+    const rate = Number.isFinite(options.rate) && options.rate > 0 ? options.rate : 1;
+    const estimate = Math.min(15000, Math.max(2500, (phrase.length * 90) / rate));
     return new Promise((resolve) => {
+      let settled = false;
+      let timer = 0;
+      const settle = () => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timer);
+        if (this.releaseCurrent === settle) this.releaseCurrent = null;
+        resolve();
+      };
+      this.releaseCurrent = settle;
       const start = () => {
-        if (token !== this.token) return;
+        if (settled || token !== this.token || !window.speechSynthesis) {
+          settle();
+          return;
+        }
         const utterance = new SpeechSynthesisUtterance(phrase);
         utterance.volume = clampUnit(options.volume);
         utterance.rate = options.rate;
         const voice = voiceForSpeech(window.speechSynthesis.getVoices(), options.voiceURI);
         if (voice) utterance.voice = voice;
-        const estimate = Math.min(15000, Math.max(2500, phrase.length * 90));
-        const timer = window.setTimeout(() => finish(), estimate);
-        const finish = () => {
-          window.clearTimeout(timer);
-          this.speaking = false;
-          if (token === this.token) resolve();
-        };
+        const finish = () => settle();
+        timer = window.setTimeout(() => {
+          if (token === this.token) window.speechSynthesis.cancel();
+          finish();
+        }, estimate);
         utterance.onend = finish;
         utterance.onerror = finish;
-        this.speaking = true;
+        this.utteranceArmed = true;
         window.speechSynthesis.speak(utterance);
       };
-      if (interrupt) window.setTimeout(start, 50);
+      if (gap) window.setTimeout(start, 50);
       else start();
     });
   }
@@ -57,32 +71,36 @@ export class Speaker {
     this.audio = audio;
     this.audioUrl = url;
     return new Promise((resolve) => {
-      const finish = () => {
+      let settled = false;
+      let timer = 0;
+      const settle = () => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timer);
         if (this.audioUrl === url) {
           URL.revokeObjectURL(url);
           this.audioUrl = null;
         }
         if (this.audio === audio) this.audio = null;
-        if (token === this.token) resolve();
+        if (this.releaseCurrent === settle) this.releaseCurrent = null;
+        resolve();
       };
-      const timer = window.setTimeout(finish, 30000);
-      audio.onended = () => {
-        window.clearTimeout(timer);
+      this.releaseCurrent = settle;
+      const finish = () => settle();
+      timer = window.setTimeout(() => {
+        if (token === this.token) {
+          audio.pause();
+          audio.src = "";
+        }
         finish();
-      };
-      audio.onerror = () => {
-        window.clearTimeout(timer);
-        finish();
-      };
-      void audio.play().catch(() => {
-        window.clearTimeout(timer);
-        finish();
-      });
+      }, 30000);
+      audio.onended = finish;
+      audio.onerror = finish;
+      void audio.play().catch(finish);
     });
   }
 
   private hardStop(): void {
-    this.speaking = false;
     if (typeof window !== "undefined" && window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
@@ -95,6 +113,9 @@ export class Speaker {
       URL.revokeObjectURL(this.audioUrl);
       this.audioUrl = null;
     }
+    const release = this.releaseCurrent;
+    this.releaseCurrent = null;
+    release?.();
   }
 }
 

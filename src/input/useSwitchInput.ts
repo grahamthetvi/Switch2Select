@@ -122,6 +122,12 @@ export function usePointerPress(handlers: PointerPressHandlers): (node: HTMLElem
     if (!node) return;
     let timers: number[] = [];
     let active = false;
+    let secondaryTimer: number | null = null;
+    const clearSecondary = () => {
+      if (secondaryTimer === null) return;
+      window.clearTimeout(secondaryTimer);
+      secondaryTimer = null;
+    };
     const clear = () => {
       for (const timer of timers) window.clearTimeout(timer);
       timers = [];
@@ -132,10 +138,17 @@ export function usePointerPress(handlers: PointerPressHandlers): (node: HTMLElem
       if (event.button === 2) {
         event.preventDefault();
         current.current.onIn();
-        current.current.onCommit();
+        if (secondaryTimer !== null) return;
+        const wait = current.current.previewHoldMs;
+        secondaryTimer = window.setTimeout(() => {
+          secondaryTimer = null;
+          if (!current.current.enabled) return;
+          current.current.onCommit();
+        }, wait);
         return;
       }
       if (event.button !== 0) return;
+      clearSecondary();
       active = true;
       try {
         node.setPointerCapture(event.pointerId);
@@ -156,16 +169,22 @@ export function usePointerPress(handlers: PointerPressHandlers): (node: HTMLElem
     };
     const up = () => clear();
     const menu = (event: Event) => event.preventDefault();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.code === "Escape") clearSecondary();
+    };
     node.addEventListener("pointerdown", down);
     window.addEventListener("pointerup", up);
     node.addEventListener("pointercancel", up);
     node.addEventListener("contextmenu", menu);
+    window.addEventListener("keydown", onKey);
     cleanup.current = () => {
       clear();
+      clearSecondary();
       node.removeEventListener("pointerdown", down);
       window.removeEventListener("pointerup", up);
       node.removeEventListener("pointercancel", up);
       node.removeEventListener("contextmenu", menu);
+      window.removeEventListener("keydown", onKey);
     };
   }, []);
 }
