@@ -155,6 +155,7 @@ export function TwoChoice({
                 confirm={state.confirm && state.side === side}
                 motion={motion}
                 showLabel={library.settings.showChildLabel}
+                settings={library.settings}
                 size="pair"
                 pointerRef={side === 0 ? leftRef : rightRef}
               />

@@ -17,8 +17,16 @@ export interface VocabularyItem {
 export interface AppSettings {
   field: "black" | "white";
   outlineColor: string;
+  photoOutlineEnabled: boolean;
+  photoOutlineThickness: number;
   imageScale: number;
   showChildLabel: boolean;
+  labelFontSize: number;
+  labelTextColor: string;
+  labelBubbleEnabled: boolean;
+  labelBubbleColor: string;
+  labelBubbleThickness: number;
+  autoFullscreen: boolean;
   motion: "subtle" | "off";
   rotationMs: number;
   appearDwellMs: number;
@@ -42,8 +50,16 @@ export interface AppSettings {
 export const defaultSettings: AppSettings = {
   field: "black",
   outlineColor: "#f4f4f4",
+  photoOutlineEnabled: true,
+  photoOutlineThickness: 6,
   imageScale: 0.78,
   showChildLabel: false,
+  labelFontSize: 64,
+  labelTextColor: "#f4f4f4",
+  labelBubbleEnabled: true,
+  labelBubbleColor: "#ff0000",
+  labelBubbleThickness: 4,
+  autoFullscreen: true,
   motion: "subtle",
   rotationMs: 6000,
   appearDwellMs: 500,
@@ -64,6 +80,10 @@ export const defaultSettings: AppSettings = {
   gamepadCommitButton: 1,
 };
 
+function hexColor(value: unknown, fallback: string): string {
+  return typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback;
+}
+
 export function clamp(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return min;
   return Math.min(max, Math.max(min, value));
@@ -76,14 +96,36 @@ export function normalizeSettings(value: Partial<AppSettings> | null | undefined
   if (pressCommitHoldMs < pressInHoldMs + 80) {
     pressCommitHoldMs = Math.min(2500, pressInHoldMs + 80);
   }
-  const outline = /^#[0-9a-fA-F]{6}$/.test(merged.outlineColor)
-    ? merged.outlineColor
-    : defaultSettings.outlineColor;
   return {
     field: merged.field === "white" ? "white" : "black",
-    outlineColor: outline,
+    outlineColor: hexColor(merged.outlineColor, defaultSettings.outlineColor),
+    photoOutlineEnabled:
+      typeof merged.photoOutlineEnabled === "boolean"
+        ? merged.photoOutlineEnabled
+        : defaultSettings.photoOutlineEnabled,
+    photoOutlineThickness: clamp(
+      merged.photoOutlineThickness ?? defaultSettings.photoOutlineThickness,
+      0,
+      24,
+    ),
     imageScale: clamp(merged.imageScale, 0.45, 0.95),
     showChildLabel: Boolean(merged.showChildLabel),
+    labelFontSize: clamp(merged.labelFontSize ?? defaultSettings.labelFontSize, 24, 120),
+    labelTextColor: hexColor(merged.labelTextColor, defaultSettings.labelTextColor),
+    labelBubbleEnabled:
+      typeof merged.labelBubbleEnabled === "boolean"
+        ? merged.labelBubbleEnabled
+        : defaultSettings.labelBubbleEnabled,
+    labelBubbleColor: hexColor(merged.labelBubbleColor, defaultSettings.labelBubbleColor),
+    labelBubbleThickness: clamp(
+      merged.labelBubbleThickness ?? defaultSettings.labelBubbleThickness,
+      0,
+      12,
+    ),
+    autoFullscreen:
+      typeof merged.autoFullscreen === "boolean"
+        ? merged.autoFullscreen
+        : defaultSettings.autoFullscreen,
     motion: merged.motion === "off" ? "off" : "subtle",
     rotationMs: clamp(merged.rotationMs, 2000, 20000),
     appearDwellMs: clamp(merged.appearDwellMs, 300, 800),

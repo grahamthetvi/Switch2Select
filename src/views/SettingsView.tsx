@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { listenForVoices, voicesForSettings } from "../audio/speech";
 import { PartnerPage } from "../components/PartnerPage";
+import { exitFullscreen, isFullscreen, toggleFullscreen } from "../lib/fullscreen";
 import type { ViewId } from "../nav";
 import { useLibrary } from "../state/LibraryContext";
 
@@ -8,6 +9,7 @@ export function SettingsView({ request }: { request: (view: ViewId) => void }) {
   const { settings, updateSettings } = useLibrary();
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [pinDraft, setPinDraft] = useState(settings.pin);
+  const [fullscreenOn, setFullscreenOn] = useState(isFullscreen);
   const listedVoices = voicesForSettings(voices);
   const selectedVoice = listedVoices.some((voice) => voice.voiceURI === settings.ttsVoiceURI)
     ? settings.ttsVoiceURI
@@ -15,6 +17,13 @@ export function SettingsView({ request }: { request: (view: ViewId) => void }) {
 
   useEffect(() => listenForVoices(setVoices), []);
   useEffect(() => setPinDraft(settings.pin), [settings.pin]);
+  useEffect(() => {
+    function sync() {
+      setFullscreenOn(isFullscreen());
+    }
+    document.addEventListener("fullscreenchange", sync);
+    return () => document.removeEventListener("fullscreenchange", sync);
+  }, []);
 
   function setPin(value: string) {
     const digits = value.replace(/\D/g, "").slice(0, 4);
@@ -29,7 +38,7 @@ export function SettingsView({ request }: { request: (view: ViewId) => void }) {
       onBack={() => request("talk")}
     >
       <section className="panel">
-        <h2>Field</h2>
+        <h2>Display</h2>
         <div className="row">
           <button
             type="button"
@@ -54,23 +63,28 @@ export function SettingsView({ request }: { request: (view: ViewId) => void }) {
             White
           </button>
         </div>
-        <label className="stack">
-          <span>Edge color</span>
+        <label className="check">
           <input
-            type="color"
-            value={settings.outlineColor}
-            onChange={(event) => updateSettings({ outlineColor: event.target.value })}
+            type="checkbox"
+            checked={settings.autoFullscreen}
+            onChange={(event) => {
+              const autoFullscreen = event.target.checked;
+              updateSettings({ autoFullscreen });
+              if (!autoFullscreen) void exitFullscreen();
+            }}
           />
+          <span>Enter full screen when the app opens</span>
         </label>
-        <Slider
-          label="Picture size"
-          min={0.45}
-          max={0.95}
-          step={0.01}
-          value={settings.imageScale}
-          display={`${Math.round(settings.imageScale * 100)}%`}
-          onChange={(imageScale) => updateSettings({ imageScale })}
-        />
+        <div className="row">
+          <button
+            type="button"
+            className="button"
+            aria-pressed={fullscreenOn}
+            onClick={() => void toggleFullscreen()}
+          >
+            {fullscreenOn ? "Leave full screen" : "Enter full screen"}
+          </button>
+        </div>
         <div className="row">
           <button
             type="button"
@@ -89,6 +103,48 @@ export function SettingsView({ request }: { request: (view: ViewId) => void }) {
             No motion
           </button>
         </div>
+      </section>
+
+      <section className="panel">
+        <h2>Photo outline</h2>
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={settings.photoOutlineEnabled}
+            onChange={(event) => updateSettings({ photoOutlineEnabled: event.target.checked })}
+          />
+          <span>Photo outline bubble</span>
+        </label>
+        <label className="stack">
+          <span>Photo outline color</span>
+          <input
+            type="color"
+            value={settings.outlineColor}
+            onChange={(event) => updateSettings({ outlineColor: event.target.value })}
+          />
+        </label>
+        <Slider
+          label="Photo outline thickness"
+          min={0}
+          max={24}
+          step={1}
+          value={settings.photoOutlineThickness}
+          display={`${settings.photoOutlineThickness}px`}
+          onChange={(photoOutlineThickness) => updateSettings({ photoOutlineThickness })}
+        />
+        <Slider
+          label="Picture size"
+          min={0.45}
+          max={0.95}
+          step={0.01}
+          value={settings.imageScale}
+          display={`${Math.round(settings.imageScale * 100)}%`}
+          onChange={(imageScale) => updateSettings({ imageScale })}
+        />
+      </section>
+
+      <section className="panel">
+        <h2>Word</h2>
         <label className="check">
           <input
             type="checkbox"
@@ -97,7 +153,50 @@ export function SettingsView({ request }: { request: (view: ViewId) => void }) {
           />
           <span>Show one word under the picture</span>
         </label>
+        <Slider
+          label="Word size"
+          min={24}
+          max={120}
+          step={2}
+          value={settings.labelFontSize}
+          display={`${settings.labelFontSize}px`}
+          onChange={(labelFontSize) => updateSettings({ labelFontSize })}
+        />
+        <label className="stack">
+          <span>Word color</span>
+          <input
+            type="color"
+            value={settings.labelTextColor}
+            onChange={(event) => updateSettings({ labelTextColor: event.target.value })}
+          />
+        </label>
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={settings.labelBubbleEnabled}
+            onChange={(event) => updateSettings({ labelBubbleEnabled: event.target.checked })}
+          />
+          <span>Bubble around each letter</span>
+        </label>
+        <label className="stack">
+          <span>Bubble color</span>
+          <input
+            type="color"
+            value={settings.labelBubbleColor}
+            onChange={(event) => updateSettings({ labelBubbleColor: event.target.value })}
+          />
+        </label>
+        <Slider
+          label="Bubble thickness"
+          min={0}
+          max={12}
+          step={1}
+          value={settings.labelBubbleThickness}
+          display={`${settings.labelBubbleThickness}px`}
+          onChange={(labelBubbleThickness) => updateSettings({ labelBubbleThickness })}
+        />
       </section>
+
       <section className="panel">
         <h2>Time</h2>
         <Slider
@@ -154,6 +253,7 @@ export function SettingsView({ request }: { request: (view: ViewId) => void }) {
           <span>After speaking, go on by itself. Off means you press Next.</span>
         </label>
       </section>
+
       <section className="panel">
         <h2>Sound</h2>
         <label className="check">
@@ -209,6 +309,7 @@ export function SettingsView({ request }: { request: (view: ViewId) => void }) {
           Recorded clips stay on this device; a built-in voice speaks on this device; a network voice would send the words out, so those are not listed when a built-in voice exists.
         </p>
       </section>
+
       <section className="panel">
         <h2>Partner</h2>
         <label className="check">

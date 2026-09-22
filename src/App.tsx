@@ -1,6 +1,8 @@
 import { Component, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { ConfirmGate } from "./components/ConfirmGate";
+import { SettingsCornerButton } from "./components/SettingsCornerButton";
 import { useMotionOn } from "./lib/motion";
+import { useAutoFullscreen } from "./lib/useAutoFullscreen";
 import { hashFor, viewFromHash, viewNeedsGate, type ViewId } from "./nav";
 import { LibraryProvider, useLibrary } from "./state/LibraryContext";
 import { Communicate } from "./views/Communicate";
@@ -24,6 +26,7 @@ export function App() {
 function Shell() {
   const { settings } = useLibrary();
   const motionOn = useMotionOn(settings.motion);
+  useAutoFullscreen(settings.autoFullscreen);
   const initial = viewFromHash(window.location.hash);
   const [view, setView] = useState<ViewId>(initial === "talk" || !viewNeedsGate(initial) ? initial : "talk");
   const [pending, setPending] = useState<ViewId | null>(viewNeedsGate(initial) ? initial : null);
@@ -100,6 +103,7 @@ function Shell() {
         {view === "calibrate" ? <Calibration request={request} /> : null}
         {view === "guide" ? <Guide request={request} /> : null}
       </Suspense>
+      <SettingsCornerButton onRequest={request} hidden={view === "settings"} />
       {pending ? (
         <ConfirmGate pin={settings.pin} onStay={() => setPending(null)} onContinue={accept} />
       ) : null}

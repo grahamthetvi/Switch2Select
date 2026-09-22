@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { ViewId } from "../nav";
 
+export { toggleFullscreen } from "../lib/fullscreen";
+
 const BAR_IDLE_MS = 4000;
 
 export function PartnerBar({
@@ -177,13 +179,4 @@ export function PartnerBar({
       )}
     </div>
   );
-}
-
-export async function toggleFullscreen(): Promise<void> {
-  try {
-    if (document.fullscreenElement) await document.exitFullscreen();
-    else await document.documentElement.requestFullscreen();
-  } catch {
-    // Full screen can be denied. The page still works.
-  }
 }

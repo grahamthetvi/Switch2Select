@@ -152,6 +152,7 @@ function Talk({
           confirm={state.confirm}
           motion={motion}
           showLabel={settings.showChildLabel}
+          settings={settings}
           size="solo"
           pointerRef={pointerRef}
         />

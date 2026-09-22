@@ -4,6 +4,7 @@ import { exportLibrary, importLibrary, settingsFromBackup } from "../lib/backup"
 import { fitImage } from "../lib/images";
 import { removePhotoBackground } from "../lib/removeBackground";
 import { canPlace, childrenOf } from "../lib/tree";
+import { labelStyle, photoStyle } from "../lib/visualStyle";
 import type { ViewId } from "../nav";
 import { useLibrary } from "../state/LibraryContext";
 import type { VocabularyItem } from "../types";
@@ -284,8 +285,29 @@ export function Library({ request }: { request: (view: ViewId) => void }) {
             <img
               src={previewUrl}
               alt=""
-              style={{ transform: `translate(${draft.imageX}%, ${draft.imageY}%) scale(${draft.imageZoom})` }}
+              style={photoStyle({
+                imageX: draft.imageX,
+                imageY: draft.imageY,
+                imageZoom: draft.imageZoom,
+                outlineEnabled: library.settings.photoOutlineEnabled,
+                outlineColor: draft.colorAccent ?? library.settings.outlineColor,
+                outlineThickness: library.settings.photoOutlineThickness,
+              })}
             />
+            {library.settings.showChildLabel ? (
+              <p
+                className="beacon-label preview-label"
+                style={labelStyle({
+                  fontSize: Math.min(library.settings.labelFontSize, 48),
+                  textColor: library.settings.labelTextColor,
+                  bubbleEnabled: library.settings.labelBubbleEnabled,
+                  bubbleColor: library.settings.labelBubbleColor,
+                  bubbleThickness: library.settings.labelBubbleThickness,
+                })}
+              >
+                {draft.label.trim() || "Name"}
+              </p>
+            ) : null}
           </div>
           <label className="stack">
             <span>Name</span>
@@ -336,13 +358,18 @@ export function Library({ request }: { request: (view: ViewId) => void }) {
             <input
               type="checkbox"
               checked={Boolean(draft.colorAccent)}
-              onChange={(event) => setDraft({ ...draft, colorAccent: event.target.checked ? "#f4f4f4" : null })}
+              onChange={(event) =>
+                setDraft({
+                  ...draft,
+                  colorAccent: event.target.checked ? library.settings.outlineColor : null,
+                })
+              }
             />
-            <span>Color edge</span>
+            <span>Own photo outline color for this picture</span>
           </label>
           {draft.colorAccent ? (
             <label className="stack">
-              <span>Edge color</span>
+              <span>This picture outline color</span>
               <input
                 type="color"
                 value={draft.colorAccent}

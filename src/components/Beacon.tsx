@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
-import type { VocabularyItem } from "../types";
+import { labelStyle, photoStyle } from "../lib/visualStyle";
+import type { AppSettings, VocabularyItem } from "../types";
 
 export function Beacon({
   item,
@@ -10,6 +11,7 @@ export function Beacon({
   confirm,
   motion,
   showLabel,
+  settings,
   size,
   pointerRef,
 }: {
@@ -21,9 +23,11 @@ export function Beacon({
   confirm: boolean;
   motion: boolean;
   showLabel: boolean;
+  settings: AppSettings;
   size: "solo" | "pair";
   pointerRef?: (node: HTMLElement | null) => void;
 }) {
+  const outlineColor = item.colorAccent ?? settings.outlineColor;
   const className = [
     "beacon",
     size === "pair" ? "beacon-pair" : "beacon-solo",
@@ -34,22 +38,36 @@ export function Beacon({
   ]
     .filter(Boolean)
     .join(" ");
+  const imageStyle = photoStyle({
+    imageX: item.imageX,
+    imageY: item.imageY,
+    imageZoom: item.imageZoom,
+    outlineEnabled: settings.photoOutlineEnabled,
+    outlineColor,
+    outlineThickness: settings.photoOutlineThickness,
+  });
+  const textStyle = labelStyle({
+    fontSize: settings.labelFontSize,
+    textColor: settings.labelTextColor,
+    bubbleEnabled: settings.labelBubbleEnabled,
+    bubbleColor: settings.labelBubbleColor,
+    bubbleThickness: settings.labelBubbleThickness,
+  });
   return (
     <div
       className={className}
-      style={{ "--beacon-outline": item.colorAccent ?? "var(--outline)" } as CSSProperties}
+      style={{ "--beacon-outline": outlineColor } as CSSProperties}
       ref={pointerRef}
       data-label={item.label}
     >
       <div className={motion ? "beacon-frame arrive" : "beacon-frame"} key={attentionKey}>
-        <img
-          src={url}
-          alt={item.label}
-          draggable={false}
-          style={{ transform: `translate(${item.imageX}%, ${item.imageY}%) scale(${item.imageZoom})` }}
-        />
+        <img src={url} alt={item.label} draggable={false} style={imageStyle} />
       </div>
-      {showLabel ? <p className="beacon-label">{item.label}</p> : null}
+      {showLabel ? (
+        <p className="beacon-label" style={textStyle}>
+          {item.label}
+        </p>
+      ) : null}
     </div>
   );
 }
