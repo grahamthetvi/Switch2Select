@@ -1,0 +1,506 @@
+:root {
+  --field: #000000;
+  --ink: #f4f4f4;
+  --outline: #f4f4f4;
+  --muted: rgba(244, 244, 244, 0.72);
+  --line: rgba(244, 244, 244, 0.45);
+  --image-scale: 0.78;
+  color-scheme: dark;
+  font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  background: var(--field);
+  color: var(--ink);
+}
+
+html[data-field="white"] {
+  --field: #f7f7f5;
+  --ink: #111111;
+  --muted: rgba(17, 17, 17, 0.72);
+  --line: rgba(17, 17, 17, 0.4);
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+html[data-view="talk"],
+html[data-view="two"],
+html[data-view="talk"] body,
+html[data-view="two"] body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  margin: 0;
+  background: var(--field);
+  color: var(--ink);
+  touch-action: manipulation;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+.field {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  background: var(--field);
+  padding:
+    env(safe-area-inset-top)
+    env(safe-area-inset-right)
+    calc(env(safe-area-inset-bottom) + 4.5rem)
+    env(safe-area-inset-left);
+  user-select: none;
+}
+
+.beacon {
+  --beacon-outline: var(--outline);
+  display: grid;
+  place-items: center;
+  align-content: center;
+  touch-action: none;
+}
+
+.beacon-solo {
+  width: calc(var(--image-scale) * min(88vw, 82dvh));
+  height: calc(var(--image-scale) * min(88vw, 82dvh));
+}
+
+.beacon-pair {
+  width: min(40vw, 62dvh);
+  height: min(40vw, 62dvh);
+}
+
+.beacon-frame {
+  width: 86%;
+  height: 78%;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.beacon-frame img,
+.preview-field img,
+.library-list img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.beacon.is-offer {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--beacon-outline) 65%, transparent);
+}
+
+.beacon.is-latched,
+.practice-target.is-latched {
+  box-shadow: 0 0 0 10px var(--beacon-outline, var(--outline));
+}
+
+.beacon.is-latched.is-motion {
+  transform: scale(1.04);
+}
+
+.beacon.is-confirm {
+  animation: confirm-ring 800ms ease-out 1;
+}
+
+.beacon-frame.arrive {
+  animation: arrive 900ms ease-out 1;
+}
+
+.beacon-label {
+  margin: 0.35rem 0 0;
+  font-size: clamp(2rem, 6vw, 4.5rem);
+  font-weight: 650;
+  line-height: 1.05;
+  text-align: center;
+}
+
+.pair {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8vw;
+  padding: 4vh 5vw 8vh;
+  box-sizing: border-box;
+}
+
+.partner-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: safe center;
+  overflow-x: auto;
+  gap: 8px;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--field) 88%, transparent);
+  opacity: 0.38;
+}
+
+.partner-bar:hover,
+.partner-bar:focus-within,
+.partner-bar.is-open {
+  opacity: 1;
+}
+
+.button {
+  min-height: 56px;
+  min-width: 56px;
+  flex: 0 0 auto;
+  padding: 12px 16px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.button-strong {
+  border-color: var(--ink);
+}
+
+.button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid var(--outline);
+  outline-offset: 3px;
+}
+
+.button:disabled {
+  opacity: 0.45;
+}
+
+.partner-note,
+.wait {
+  max-width: 28rem;
+  margin: 0;
+  padding: 0 1.5rem;
+  text-align: center;
+  font-size: 1.35rem;
+  line-height: 1.4;
+}
+
+.partner-page {
+  box-sizing: border-box;
+  min-height: 100dvh;
+  max-width: 920px;
+  margin: 0 auto;
+  padding: calc(24px + env(safe-area-inset-top)) 20px 64px;
+}
+
+.partner-head h1,
+.panel h2 {
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.partner-head h1 {
+  margin: 0.6rem 0 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+
+.lede,
+.note,
+.hint,
+.panel p,
+.panel li {
+  font-size: 1.2rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.note {
+  color: var(--ink);
+}
+
+.panel {
+  margin-top: 1.5rem;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.stack {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 1.15rem;
+}
+
+.check {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  font-size: 1.15rem;
+  min-height: 48px;
+}
+
+.check input {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+input[type="text"],
+input[type="number"],
+input:not([type]),
+select {
+  min-height: 56px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: transparent;
+}
+
+input[type="range"] {
+  width: 100%;
+  height: 48px;
+}
+
+input[type="color"] {
+  width: 88px;
+  height: 56px;
+  padding: 0;
+  border: 2px solid var(--line);
+  background: transparent;
+}
+
+.library-list {
+  list-style: none;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.library-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.library-list img {
+  width: 88px;
+  height: 88px;
+  background: var(--field);
+}
+
+.library-list div {
+  display: grid;
+}
+
+.library-list strong {
+  font-size: 1.25rem;
+}
+
+.library-list .button {
+  grid-column: auto;
+}
+
+.preview-field {
+  height: 280px;
+  display: grid;
+  place-items: center;
+  background: var(--field);
+  border: 2px solid var(--line);
+  overflow: hidden;
+}
+
+.preview-field img {
+  width: 80%;
+  height: 80%;
+}
+
+.practice-wrap {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.practice-target {
+  width: min(70vw, 420px);
+  height: min(70vw, 420px);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 12px var(--outline);
+  touch-action: none;
+}
+
+.practice-target.is-motion.is-latched {
+  transform: scale(1.04);
+}
+
+.practice-status {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+  text-align: center;
+}
+
+.gate {
+  width: 100vw;
+  height: 100dvh;
+  max-width: 100vw;
+  max-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--field);
+  color: var(--ink);
+}
+
+.gate::backdrop {
+  background: var(--field);
+}
+
+.gate-inner {
+  min-height: 100%;
+  box-sizing: border-box;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 1rem;
+  padding: 2rem 1.25rem;
+  text-align: center;
+}
+
+.gate-inner h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  max-width: 16ch;
+}
+
+.gate-actions,
+.pad {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.pad-key {
+  width: 88px;
+  height: 72px;
+  font-size: 1.6rem;
+}
+
+.gate-dots {
+  display: flex;
+  gap: 12px;
+  margin: 0;
+}
+
+.dot {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+}
+
+.dot.is-filled {
+  background: var(--ink);
+}
+
+pre {
+  width: min(100%, 40rem);
+  overflow: auto;
+  padding: 1rem;
+  border: 2px solid var(--line);
+  text-align: left;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+label.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (orientation: portrait) {
+  .pair {
+    flex-direction: column;
+    justify-content: space-evenly;
+  }
+
+  .beacon-pair {
+    width: min(78vw, 38dvh);
+    height: min(78vw, 38dvh);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .beacon,
+  .beacon-frame,
+  .practice-target {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+html[data-motion="off"] .beacon,
+html[data-motion="off"] .beacon-frame,
+html[data-motion="off"] .practice-target {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0.45;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes confirm-ring {
+  0% {
+    box-shadow: 0 0 0 10px var(--beacon-outline);
+  }
+  45% {
+    box-shadow: 0 0 0 18px var(--beacon-outline);
+  }
+  100% {
+    box-shadow: 0 0 0 10px var(--beacon-outline);
+  }
+}
