@@ -49,6 +49,7 @@ select {
 }
 
 .field {
+  position: relative;
   min-height: 100dvh;
   display: grid;
   place-items: center;
@@ -59,6 +60,8 @@ select {
     calc(env(safe-area-inset-bottom) + 4.5rem)
     env(safe-area-inset-left);
   user-select: none;
+  touch-action: none;
+  -webkit-touch-callout: none;
 }
 
 .beacon {
@@ -67,6 +70,7 @@ select {
   place-items: center;
   align-content: center;
   touch-action: none;
+  -webkit-touch-callout: none;
 }
 
 .beacon-solo {
@@ -151,10 +155,10 @@ select {
   padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
   background: color-mix(in srgb, var(--field) 88%, transparent);
   opacity: 0.38;
+  touch-action: manipulation;
+  transition: opacity 400ms ease;
 }
 
-.partner-bar:hover,
-.partner-bar:focus-within,
 .partner-bar.is-open {
   opacity: 1;
 }
@@ -185,6 +189,21 @@ select:focus-visible {
   opacity: 0.45;
 }
 
+.partner-aside {
+  position: absolute;
+  z-index: 2;
+  top: calc(0.75rem + env(safe-area-inset-top));
+  left: calc(0.85rem + env(safe-area-inset-left));
+  max-width: min(22rem, calc(100% - 1.7rem - env(safe-area-inset-left) - env(safe-area-inset-right)));
+  margin: 0;
+  padding: 0;
+  text-align: left;
+  font-size: 0.95rem;
+  line-height: 1.35;
+  color: var(--muted);
+  pointer-events: none;
+}
+
 .partner-note,
 .wait {
   max-width: 28rem;
@@ -201,6 +220,7 @@ select:focus-visible {
   max-width: 920px;
   margin: 0 auto;
   padding: calc(24px + env(safe-area-inset-top)) 20px 64px;
+  touch-action: manipulation;
 }
 
 .partner-head h1,
@@ -383,7 +403,11 @@ input[type="color"] {
   align-content: center;
   justify-items: center;
   gap: 1rem;
-  padding: 2rem 1.25rem;
+  padding:
+    calc(2rem + env(safe-area-inset-top))
+    calc(1.25rem + env(safe-area-inset-right))
+    calc(2rem + env(safe-area-inset-bottom))
+    calc(1.25rem + env(safe-area-inset-left));
   text-align: center;
 }
 
@@ -467,7 +491,8 @@ label.button {
 @media (prefers-reduced-motion: reduce) {
   .beacon,
   .beacon-frame,
-  .practice-target {
+  .practice-target,
+  .partner-bar {
     animation: none !important;
     transition: none !important;
     transform: none !important;
@@ -476,7 +501,8 @@ label.button {
 
 html[data-motion="off"] .beacon,
 html[data-motion="off"] .beacon-frame,
-html[data-motion="off"] .practice-target {
+html[data-motion="off"] .practice-target,
+html[data-motion="off"] .partner-bar {
   animation: none !important;
   transition: none !important;
   transform: none !important;

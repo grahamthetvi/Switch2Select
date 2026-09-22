@@ -43,7 +43,6 @@ export interface ChoiceState {
   offer: 0 | 1;
   side: 0 | 1 | null;
   visibleMs: number;
-  offerMs: number;
   latchMs: number;
   holdMs: number;
   paused: boolean;
@@ -62,8 +61,6 @@ export interface ChoiceConfig {
   speakHoldMs: number;
   autoResumeAfterSpeak: boolean;
   previewAudio: boolean;
-  scanMs: number;
-  scan: boolean;
 }
 
 export type ChoiceEvent =
@@ -91,7 +88,7 @@ export function pressConfigFrom(settings: AppSettings): PressConfig {
   };
 }
 
-export function choiceConfigFrom(settings: AppSettings, motionOn: boolean): ChoiceConfig {
+export function choiceConfigFrom(settings: AppSettings): ChoiceConfig {
   return {
     appearDwellMs: settings.appearDwellMs,
     previewHoldMs: settings.previewHoldMs,
@@ -99,8 +96,6 @@ export function choiceConfigFrom(settings: AppSettings, motionOn: boolean): Choi
     speakHoldMs: settings.speakHoldMs,
     autoResumeAfterSpeak: settings.autoResumeAfterSpeak,
     previewAudio: settings.previewAudio,
-    scanMs: settings.rotationMs,
-    scan: motionOn,
   };
 }
 
@@ -126,7 +121,6 @@ export function initialChoiceState(): ChoiceState {
     offer: 0,
     side: null,
     visibleMs: 0,
-    offerMs: 0,
     latchMs: 0,
     holdMs: 0,
     paused: false,
@@ -299,11 +293,6 @@ export function reduceChoice(state: ChoiceState, event: ChoiceEvent, config: Cho
           confirm: false,
         });
       }
-      if (state.phase === "idle" && config.scan) {
-        const offerMs = state.offerMs + event.dt;
-        if (offerMs < config.scanMs) return { ...state, visibleMs, offerMs };
-        return { ...state, visibleMs, offerMs: 0, offer: otherSide(state.offer) };
-      }
       return { ...state, visibleMs };
     }
     case "pressIn": {
@@ -327,7 +316,6 @@ export function reduceChoice(state: ChoiceState, event: ChoiceEvent, config: Cho
           phase: "idle",
           latchMs: 0,
           visibleMs: 0,
-          offerMs: 0,
           offer: 0,
           confirm: false,
           appearSeq: state.appearSeq + 1,
@@ -361,7 +349,6 @@ export function reduceChoice(state: ChoiceState, event: ChoiceEvent, config: Cho
         phase: "idle",
         offer,
         side: null,
-        offerMs: 0,
         latchMs: 0,
         confirm: false,
       });

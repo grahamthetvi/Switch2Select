@@ -111,7 +111,7 @@ export function SettingsView({ request }: { request: (view: ViewId) => void }) {
           max={800}
           step={50}
           value={settings.appearDwellMs}
-          display={`${settings.appearDwellMs} ms`}
+          display={secondsFromMs(settings.appearDwellMs)}
           onChange={(appearDwellMs) => updateSettings({ appearDwellMs })}
         />
         <Slider
@@ -120,7 +120,7 @@ export function SettingsView({ request }: { request: (view: ViewId) => void }) {
           max={800}
           step={50}
           value={settings.previewHoldMs}
-          display={`${settings.previewHoldMs} ms`}
+          display={secondsFromMs(settings.previewHoldMs)}
           onChange={(previewHoldMs) => updateSettings({ previewHoldMs })}
         />
         <Slider
@@ -210,7 +210,7 @@ export function SettingsView({ request }: { request: (view: ViewId) => void }) {
             checked={settings.simpleMode}
             onChange={(event) => updateSettings({ simpleMode: event.target.checked })}
           />
-          <span>Simple bar: only Pause and Say it again</span>
+          <span>Simple bar: Pause, Say it again, Partner, and Back in two pictures</span>
         </label>
         <label className="stack">
           <span>Partner code, four numbers. Leave empty for a simple question.</span>
@@ -233,6 +233,11 @@ export function SettingsView({ request }: { request: (view: ViewId) => void }) {
       </section>
     </PartnerPage>
   );
+}
+
+function secondsFromMs(ms: number): string {
+  const text = (Math.round(ms) / 1000).toFixed(2).replace(/0$/, "").replace(/\.0$/, "");
+  return `${text} ${text === "1" ? "second" : "seconds"}`;
 }
 
 function Slider({

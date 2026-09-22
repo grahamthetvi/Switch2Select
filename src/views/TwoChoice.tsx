@@ -24,7 +24,7 @@ export function TwoChoice({
   const motion = useMotionOn(library.settings.motion);
   const kids = childrenOf(library.items, parentId);
   const pair: [VocabularyItem | undefined, VocabularyItem | undefined] = [kids[0], kids[1]];
-  const [state, dispatch] = useChoiceMachine(choiceConfigFrom(library.settings, motion), parentId ?? "root");
+  const [state, dispatch] = useChoiceMachine(choiceConfigFrom(library.settings), parentId ?? "root");
   const speaker = useRef(new Speaker());
   const pairRef = useRef(pair);
   pairRef.current = pair;
@@ -127,7 +127,7 @@ export function TwoChoice({
   return (
     <main className="field" onContextMenu={(event) => event.preventDefault()} data-phase={state.phase}>
       <p className="sr-only" aria-live="polite">{live}</p>
-      {kids.length > 2 ? <p className="partner-note">This branch has extra pictures. Showing the first two.</p> : null}
+      {kids.length > 2 ? <p className="partner-aside">This branch has extra pictures. Showing the first two.</p> : null}
       {pair[0] && pair[1] ? (
         <div className="pair">
           {([0, 1] as const).map((side) => {

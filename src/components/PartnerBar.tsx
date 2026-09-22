@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ViewId } from "../nav";
+
+const BAR_IDLE_MS = 4000;
 
 export function PartnerBar({
   simpleMode,
@@ -38,10 +40,73 @@ export function PartnerBar({
 }) {
   const [open, setOpen] = useState(false);
   const [showMore, setShowMore] = useState(false);
+  const barRef = useRef<HTMLDivElement>(null);
+  const idleRef = useRef<number | null>(null);
+  const pointerInsideRef = useRef(false);
+  const focusInsideRef = useRef(false);
+  const pointerEngagedRef = useRef(false);
+
+  function clearIdle() {
+    if (idleRef.current !== null) {
+      window.clearTimeout(idleRef.current);
+      idleRef.current = null;
+    }
+  }
+
+  function reveal() {
+    clearIdle();
+    setOpen(true);
+  }
+
+  function settle() {
+    clearIdle();
+    if (pointerInsideRef.current || focusInsideRef.current) return;
+    idleRef.current = window.setTimeout(() => setOpen(false), BAR_IDLE_MS);
+  }
+
+  useEffect(() => clearIdle, []);
+
   return (
     <div
+      ref={barRef}
       className={open ? "partner-bar is-open" : "partner-bar"}
-      onPointerDown={() => setOpen(true)}
+      onPointerEnter={() => {
+        pointerInsideRef.current = true;
+        reveal();
+      }}
+      onPointerLeave={() => {
+        pointerInsideRef.current = false;
+        settle();
+        if (!pointerEngagedRef.current) return;
+        window.setTimeout(() => {
+          if (!pointerEngagedRef.current) return;
+          pointerEngagedRef.current = false;
+          const active = document.activeElement;
+          if (active instanceof HTMLElement && barRef.current?.contains(active)) active.blur();
+        }, 0);
+      }}
+      onPointerDownCapture={() => {
+        pointerEngagedRef.current = true;
+        focusInsideRef.current = false;
+        reveal();
+      }}
+      onFocus={() => {
+        if (pointerEngagedRef.current) return;
+        focusInsideRef.current = true;
+        reveal();
+      }}
+      onBlur={(event) => {
+        const next = event.relatedTarget;
+        if (next instanceof Node && barRef.current?.contains(next)) return;
+        focusInsideRef.current = false;
+        settle();
+      }}
+      onClick={() => {
+        if (!pointerEngagedRef.current) return;
+        pointerEngagedRef.current = false;
+        const active = document.activeElement;
+        if (active instanceof HTMLElement && barRef.current?.contains(active)) active.blur();
+      }}
     >
       {onBack ? (
         <button type="button" className="button button-strong" onClick={onBack}>

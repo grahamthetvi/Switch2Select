@@ -82,7 +82,7 @@ export function Calibration({ request }: { request: (view: ViewId) => void }) {
       <section className="panel">
         <h2>Pointer holds</h2>
         <label className="stack">
-          <span>Light press after {settings.pressInHoldMs} ms</span>
+          <span>Light press after {secondsFromMs(settings.pressInHoldMs)}</span>
           <input
             type="range"
             min={80}
@@ -93,7 +93,7 @@ export function Calibration({ request }: { request: (view: ViewId) => void }) {
           />
         </label>
         <label className="stack">
-          <span>Deep press after {settings.pressCommitHoldMs} ms</span>
+          <span>Deep press after {secondsFromMs(settings.pressCommitHoldMs)}</span>
           <input
             type="range"
             min={200}
@@ -128,4 +128,9 @@ export function Calibration({ request }: { request: (view: ViewId) => void }) {
       </section>
     </PartnerPage>
   );
+}
+
+function secondsFromMs(ms: number): string {
+  const text = (Math.round(ms) / 1000).toFixed(2).replace(/0$/, "").replace(/\.0$/, "");
+  return `${text} ${text === "1" ? "second" : "seconds"}`;
 }

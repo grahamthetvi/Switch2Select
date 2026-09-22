@@ -25,8 +25,6 @@ const choiceConfig: ChoiceConfig = {
   speakHoldMs: 4000,
   autoResumeAfterSpeak: false,
   previewAudio: true,
-  scanMs: 6000,
-  scan: false,
 };
 
 function ready() {
@@ -201,8 +199,18 @@ describe("two-choice", () => {
     expect(state.speech).toBeNull();
   });
 
-  it("does not scan while motion is off", () => {
-    const state = reduceChoice(shown(), { type: "tick", dt: choiceConfig.scanMs * 2 }, choiceConfig);
+  it("does not advance the offer as time passes", () => {
+    const state = reduceChoice(shown(), { type: "tick", dt: 12000 }, choiceConfig);
     expect(state.offer).toBe(0);
+    expect(state.phase).toBe("idle");
+  });
+
+  it("previous and next move the offer and leave it there", () => {
+    const next = reduceChoice(shown(), { type: "next" }, choiceConfig);
+    expect(next.offer).toBe(1);
+    const later = reduceChoice(next, { type: "tick", dt: 12000 }, choiceConfig);
+    expect(later.offer).toBe(1);
+    const prev = reduceChoice(later, { type: "prev" }, choiceConfig);
+    expect(prev.offer).toBe(0);
   });
 });

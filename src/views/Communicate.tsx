@@ -141,7 +141,7 @@ function Talk({
   return (
     <main className="field" onContextMenu={(event) => event.preventDefault()} data-phase={state.phase}>
       <p className="sr-only" aria-live="polite">{live}</p>
-      {error ? <p className="partner-note">{error}</p> : null}
+      {error ? <p className="partner-aside">{error}</p> : null}
       {current && url ? (
         <Beacon
           item={current}
