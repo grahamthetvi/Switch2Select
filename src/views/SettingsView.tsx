@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { listenForVoices } from "../audio/speech";
+import { listenForVoices, voicesForSettings } from "../audio/speech";
 import { PartnerPage } from "../components/PartnerPage";
 import type { ViewId } from "../nav";
 import { useLibrary } from "../state/LibraryContext";
@@ -8,6 +8,10 @@ export function SettingsView({ request }: { request: (view: ViewId) => void }) {
   const { settings, updateSettings } = useLibrary();
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [pinDraft, setPinDraft] = useState(settings.pin);
+  const listedVoices = voicesForSettings(voices);
+  const selectedVoice = listedVoices.some((voice) => voice.voiceURI === settings.ttsVoiceURI)
+    ? settings.ttsVoiceURI
+    : "";
 
   useEffect(() => listenForVoices(setVoices), []);
   useEffect(() => setPinDraft(settings.pin), [settings.pin]);
@@ -190,17 +194,20 @@ export function SettingsView({ request }: { request: (view: ViewId) => void }) {
         <label className="stack">
           <span>Voice</span>
           <select
-            value={settings.ttsVoiceURI}
+            value={selectedVoice}
             onChange={(event) => updateSettings({ ttsVoiceURI: event.target.value })}
           >
             <option value="">Device default</option>
-            {voices.map((voice) => (
+            {listedVoices.map((voice) => (
               <option key={voice.voiceURI} value={voice.voiceURI}>
                 {voice.name}
               </option>
             ))}
           </select>
         </label>
+        <p className="hint">
+          Recorded clips stay on this device; a built-in voice speaks on this device; a network voice would send the words out, so those are not listed when a built-in voice exists.
+        </p>
       </section>
       <section className="panel">
         <h2>Partner</h2>

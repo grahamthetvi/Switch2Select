@@ -20,7 +20,7 @@ interface BackupItem {
 interface BackupFile {
   version: 1;
   exportedAt: string;
-  settings: AppSettings;
+  settings: Omit<AppSettings, "pin">;
   items: BackupItem[];
 }
 
@@ -33,12 +33,18 @@ function extensionFor(blob: Blob): string {
   return "audio";
 }
 
+function settingsForExport(settings: AppSettings): Omit<AppSettings, "pin"> {
+  const { pin, ...rest } = normalizeSettings(settings);
+  void pin;
+  return rest;
+}
+
 export async function exportLibrary(items: VocabularyItem[], settings: AppSettings): Promise<Blob> {
   const zip = new JSZip();
   const manifest: BackupFile = {
     version: 1,
     exportedAt: new Date().toISOString(),
-    settings: normalizeSettings(settings),
+    settings: settingsForExport(settings),
     items: items.map((item) => ({
       id: item.id,
       label: item.label,
@@ -68,7 +74,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-export async function importLibrary(file: Blob): Promise<{ items: VocabularyItem[]; settings: AppSettings }> {
+export async function importLibrary(
+  file: Blob,
+): Promise<{ items: VocabularyItem[]; settings: AppSettings; includesPin: boolean }> {
   const zip = await JSZip.loadAsync(file);
   const manifestFile = zip.file("library.json");
   if (!manifestFile) throw new Error("That backup has no library.");
@@ -102,6 +110,17 @@ export async function importLibrary(file: Blob): Promise<{ items: VocabularyItem
     if (audio) item.audioBlob = await audio.async("blob");
     items.push(item);
   }
-  const settings = normalizeSettings(isRecord(parsed.settings) ? (parsed.settings as Partial<AppSettings>) : null);
-  return { items, settings };
+  const rawSettings = isRecord(parsed.settings) ? parsed.settings : {};
+  const includesPin = Object.prototype.hasOwnProperty.call(rawSettings, "pin");
+  const settings = normalizeSettings(rawSettings as Partial<AppSettings>);
+  return { items, settings, includesPin };
+}
+
+/** Keep the partner code already on this device when the backup has none. */
+export function settingsFromBackup(
+  imported: { settings: AppSettings; includesPin: boolean },
+  devicePin: string,
+): AppSettings {
+  if (imported.includesPin) return imported.settings;
+  return { ...imported.settings, pin: normalizeSettings({ pin: devicePin }).pin };
 }

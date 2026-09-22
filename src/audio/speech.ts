@@ -29,9 +29,7 @@ export class Speaker {
         const utterance = new SpeechSynthesisUtterance(phrase);
         utterance.volume = clampUnit(options.volume);
         utterance.rate = options.rate;
-        const voice = window.speechSynthesis
-          .getVoices()
-          .find((item) => item.voiceURI === options.voiceURI);
+        const voice = voiceForSpeech(window.speechSynthesis.getVoices(), options.voiceURI);
         if (voice) utterance.voice = voice;
         const estimate = Math.min(15000, Math.max(2500, phrase.length * 90));
         const timer = window.setTimeout(() => finish(), estimate);
@@ -103,6 +101,29 @@ export class Speaker {
 function clampUnit(value: number): number {
   if (!Number.isFinite(value)) return 1;
   return Math.min(1, Math.max(0, value));
+}
+
+function isLocalVoice(voice: SpeechSynthesisVoice): boolean {
+  return voice.localService === true;
+}
+
+/** Built-in voices only, when the device has any. Otherwise the full list. */
+export function voicesForSettings(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice[] {
+  const local = voices.filter(isLocalVoice);
+  const shown = local.length > 0 ? local : voices.slice();
+  return shown.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * Never assign a network voice. Use the saved built-in voice, or another
+ * built-in voice. Return null (the browser default) only when none exist.
+ */
+export function voiceForSpeech(voices: SpeechSynthesisVoice[], voiceURI: string): SpeechSynthesisVoice | null {
+  const local = voices.filter(isLocalVoice);
+  if (local.length === 0) return null;
+  const requested = local.find((voice) => voice.voiceURI === voiceURI);
+  if (requested) return requested;
+  return local.find((voice) => voice.default) ?? local[0];
 }
 
 export function listenForVoices(onChange: (voices: SpeechSynthesisVoice[]) => void): () => void {

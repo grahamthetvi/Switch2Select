@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { PartnerPage } from "../components/PartnerPage";
-import { exportLibrary, importLibrary } from "../lib/backup";
+import { exportLibrary, importLibrary, settingsFromBackup } from "../lib/backup";
 import { fitImage } from "../lib/images";
 import { removePhotoBackground } from "../lib/removeBackground";
 import { canPlace, childrenOf } from "../lib/tree";
@@ -30,7 +30,11 @@ export function Library({ request }: { request: (view: ViewId) => void }) {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [pendingImport, setPendingImport] = useState<{ items: VocabularyItem[]; settings: typeof library.settings } | null>(null);
+  const [pendingImport, setPendingImport] = useState<{
+    items: VocabularyItem[];
+    settings: typeof library.settings;
+    includesPin: boolean;
+  } | null>(null);
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const activeCount = library.items.filter((item) => item.active).length;
@@ -135,7 +139,12 @@ export function Library({ request }: { request: (view: ViewId) => void }) {
       imageY: draft.imageY,
     };
     if (draft.audioBlob) item.audioBlob = draft.audioBlob;
-    await library.saveItem(item);
+    try {
+      await library.saveItem(item);
+    } catch {
+      setMessage("Could not save. It is still on this screen.");
+      return;
+    }
     setDraft(null);
     setMessage("Saved on this device.");
   }
@@ -150,13 +159,28 @@ export function Library({ request }: { request: (view: ViewId) => void }) {
   }
 
   async function onExport() {
-    const blob = await exportLibrary(library.items, library.settings);
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "switch2select-backup.zip";
-    link.click();
-    URL.revokeObjectURL(url);
+    setMessage(null);
+    let url: string | null = null;
+    let link: HTMLAnchorElement | null = null;
+    try {
+      const blob = await exportLibrary(library.items, library.settings);
+      url = URL.createObjectURL(blob);
+      link = document.createElement("a");
+      link.href = url;
+      link.download = "switch2select-backup.zip";
+      document.body.appendChild(link);
+      link.click();
+      const anchor = link;
+      const objectUrl = url;
+      window.setTimeout(() => {
+        anchor.remove();
+        URL.revokeObjectURL(objectUrl);
+      }, 1000);
+    } catch {
+      link?.remove();
+      if (url) URL.revokeObjectURL(url);
+      setMessage("The download did not start. The pictures are still on this device.");
+    }
   }
 
   async function onImport(file: File | undefined) {
@@ -173,7 +197,9 @@ export function Library({ request }: { request: (view: ViewId) => void }) {
     ? `${activeCount} pictures today. A hard vision day is easier with 3 to 8.`
     : activeCount === 0
       ? "No pictures are turned on for today."
-      : `${activeCount} pictures today.`;
+      : activeCount < 3
+        ? `${activeCount} ${activeCount === 1 ? "picture" : "pictures"} today. A small set, about 3 to 8, is easier to see.`
+        : `${activeCount} pictures today.`;
 
   return (
     <PartnerPage
@@ -224,11 +250,18 @@ export function Library({ request }: { request: (view: ViewId) => void }) {
               type="button"
               className="button button-strong"
               onClick={() => {
-                void library.replaceLibrary(pendingImport.items, pendingImport.settings).then(() => {
-                  setPendingImport(null);
-                  setDraft(null);
-                  setMessage("Backup restored on this device.");
-                });
+                const imported = pendingImport;
+                const settings = settingsFromBackup(imported, library.settings.pin);
+                void library
+                  .replaceLibrary(imported.items, settings)
+                  .then(() => {
+                    setPendingImport(null);
+                    setDraft(null);
+                    setMessage("Backup restored on this device.");
+                  })
+                  .catch(() => {
+                    setMessage("Could not save that backup.");
+                  });
               }}
             >
               Replace

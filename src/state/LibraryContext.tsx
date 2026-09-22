@@ -6,6 +6,7 @@ import {
   saveItem as saveStoredItem,
   saveSettings,
 } from "../db/db";
+import { requestPersistentStore } from "../lib/persist";
 import { type AppSettings, type VocabularyItem, defaultSettings, normalizeSettings } from "../types";
 
 interface LibraryValue {
@@ -36,6 +37,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         setItems(loaded.items);
         setSettings(loaded.settings);
         setReady(true);
+        requestPersistentStore();
       })
       .catch(() => {
         if (cancelled) return;
