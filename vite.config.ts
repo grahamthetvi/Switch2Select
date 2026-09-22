@@ -8,6 +8,7 @@ const isolation = {
 };
 
 export default defineConfig({
+  base: process.env.GITHUB_PAGES === "true" ? "/Switch2Select/" : "/",
   server: { headers: isolation },
   preview: { headers: isolation },
   plugins: [
