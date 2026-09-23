@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useRef } from "react";
-import { readSwitchLevel } from "./switchEvent";
+import { readSwitchLevel, resolveSwitchLevel, type SwitchLevel } from "./switchEvent";
 
 interface SwitchHandlers {
   enabled: boolean;
+  oneSwitch: boolean;
+  latched: boolean;
+  pressCommitHoldMs: number;
   onIn: () => void;
   onCommit: () => void;
   onCancel: () => void;
@@ -19,6 +22,37 @@ function isTypingTarget(target: EventTarget | null): boolean {
 export function useSwitchInput(handlers: SwitchHandlers): void {
   const current = useRef(handlers);
   current.current = handlers;
+  const spaceHold = useRef<number | null>(null);
+
+  const clearSpaceHold = useCallback(() => {
+    if (spaceHold.current === null) return;
+    window.clearTimeout(spaceHold.current);
+    spaceHold.current = null;
+  }, []);
+
+  const dispatchLevel = useRef((level: SwitchLevel) => {
+    const mapped = resolveSwitchLevel(level, {
+      oneSwitch: current.current.oneSwitch,
+      latched: current.current.latched,
+    });
+    switch (mapped) {
+      case "in":
+        current.current.onIn();
+        break;
+      case "commit":
+        current.current.onCommit();
+        break;
+      case "cancel":
+        current.current.onCancel();
+        break;
+      default: {
+        const exhaustive: never = mapped;
+        return exhaustive;
+      }
+    }
+  });
+
+  useEffect(() => () => clearSpaceHold(), [clearSpaceHold]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -26,15 +60,22 @@ export function useSwitchInput(handlers: SwitchHandlers): void {
       switch (event.code) {
         case "Space":
           event.preventDefault();
-          current.current.onIn();
+          dispatchLevel.current("in");
+          if (!current.current.oneSwitch) return;
+          clearSpaceHold();
+          spaceHold.current = window.setTimeout(() => {
+            spaceHold.current = null;
+            if (!current.current.enabled) return;
+            current.current.onCommit();
+          }, current.current.pressCommitHoldMs);
           break;
         case "Enter":
         case "NumpadEnter":
           event.preventDefault();
-          current.current.onCommit();
+          dispatchLevel.current("commit");
           break;
         case "Escape":
-          current.current.onCancel();
+          dispatchLevel.current("cancel");
           break;
         case "ArrowRight":
           current.current.onNext?.();
@@ -46,9 +87,18 @@ export function useSwitchInput(handlers: SwitchHandlers): void {
           break;
       }
     };
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.code !== "Space") return;
+      clearSpaceHold();
+    };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
+    window.addEventListener("keyup", onKeyUp);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keyup", onKeyUp);
+      clearSpaceHold();
+    };
+  }, [clearSpaceHold]);
 
   useEffect(() => {
     const onSwitch = (event: Event) => {
@@ -56,13 +106,9 @@ export function useSwitchInput(handlers: SwitchHandlers): void {
       const level = readSwitchLevel(event);
       switch (level) {
         case "in":
-          current.current.onIn();
-          break;
         case "commit":
-          current.current.onCommit();
-          break;
         case "cancel":
-          current.current.onCancel();
+          dispatchLevel.current(level);
           break;
         case null:
           break;
@@ -80,6 +126,8 @@ export function useSwitchInput(handlers: SwitchHandlers): void {
     let frame = 0;
     let prevIn = false;
     let prevCommit = false;
+    let inDownAt: number | null = null;
+    let holdFired = false;
     const poll = () => {
       frame = requestAnimationFrame(poll);
       if (!current.current.enabled || !navigator.getGamepads) return;
@@ -90,8 +138,29 @@ export function useSwitchInput(handlers: SwitchHandlers): void {
         inPressed = inPressed || Boolean(pad.buttons[current.current.gamepadInButton]?.pressed);
         commitPressed = commitPressed || Boolean(pad.buttons[current.current.gamepadCommitButton]?.pressed);
       }
-      if (inPressed && !prevIn) current.current.onIn();
-      if (commitPressed && !prevCommit) current.current.onCommit();
+      const sameButton = current.current.gamepadInButton === current.current.gamepadCommitButton;
+      if (inPressed && !prevIn) {
+        dispatchLevel.current("in");
+        inDownAt = performance.now();
+        holdFired = false;
+      }
+      if (
+        current.current.oneSwitch
+        && inPressed
+        && inDownAt !== null
+        && !holdFired
+        && performance.now() - inDownAt >= current.current.pressCommitHoldMs
+      ) {
+        holdFired = true;
+        current.current.onCommit();
+      }
+      if (commitPressed && !prevCommit && !(current.current.oneSwitch && sameButton)) {
+        dispatchLevel.current("commit");
+      }
+      if (!inPressed) {
+        inDownAt = null;
+        holdFired = false;
+      }
       prevIn = inPressed;
       prevCommit = commitPressed;
     };

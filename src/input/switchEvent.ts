@@ -1,5 +1,13 @@
 export type SwitchLevel = "in" | "commit" | "cancel";
 
+export function resolveSwitchLevel(
+  level: SwitchLevel,
+  options: { oneSwitch: boolean; latched: boolean },
+): SwitchLevel {
+  if (options.oneSwitch && options.latched && level === "in") return "commit";
+  return level;
+}
+
 export interface SwitchInputDetail {
   level: SwitchLevel;
   source?: "keyboard" | "pointer" | "gamepad" | "adapter";

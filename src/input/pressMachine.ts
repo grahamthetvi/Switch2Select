@@ -61,6 +61,7 @@ export interface ChoiceConfig {
   speakHoldMs: number;
   autoResumeAfterSpeak: boolean;
   previewAudio: boolean;
+  offerScanMs: number;
 }
 
 export type ChoiceEvent =
@@ -96,6 +97,7 @@ export function choiceConfigFrom(settings: AppSettings): ChoiceConfig {
     speakHoldMs: settings.speakHoldMs,
     autoResumeAfterSpeak: settings.autoResumeAfterSpeak,
     previewAudio: settings.previewAudio,
+    offerScanMs: settings.oneSwitch ? settings.rotationMs : 0,
   };
 }
 
@@ -311,6 +313,14 @@ export function reduceChoice(state: ChoiceState, event: ChoiceEvent, config: Cho
           holdMs: 0,
           confirm: false,
         });
+      }
+      if (state.phase === "idle" && config.offerScanMs > 0 && visibleMs >= config.offerScanMs) {
+        return {
+          ...state,
+          offer: otherSide(state.offer),
+          visibleMs: 0,
+          appearSeq: state.appearSeq + 1,
+        };
       }
       return { ...state, visibleMs };
     }

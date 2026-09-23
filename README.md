@@ -21,12 +21,12 @@ The dev server sends `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin
 
 | Input | Light press | Deep press | Let go |
 | --- | --- | --- | --- |
-| Keyboard | Space | Enter | Escape |
+| Keyboard | Space | Enter, or Space again with One switch on | Escape |
 | Pointer on the picture | Short hold | Longer hold, or right-click | Release before the deep hold |
-| Gamepad | Button 0 (change in Practice) | Button 1 | |
+| Gamepad | Button 0 (change in Practice) | Button 1, or the same button again with One switch on | |
 | Left / right arrows | | | Previous / next picture |
 
-A dual switch can send Space and Enter. An adapter can also dispatch:
+A dual switch can send Space and Enter. One switch uses Space twice, or a hold, after you turn on **One switch** in Settings. An adapter can also dispatch:
 
 ```js
 window.dispatchEvent(new CustomEvent("switch2select:input", {
@@ -38,7 +38,7 @@ Same two presses on the single-picture screen, the two-picture screen, and Pract
 
 ## Two pictures
 
-Two-choice is optional. Each branch holds two pictures. A light press holds one. A deep press says it, or opens the next pair when that picture has two inside it. Back uses the partner control, not a third picture.
+Two-choice is optional. Each branch holds two pictures. A light press holds one. A deep press says it, or opens the next pair when that picture has two inside it. Back uses the partner control, not a third picture. With One switch on, the offer takes turns by itself.
 
 ## Privacy
 

@@ -70,6 +70,9 @@ function Talk({
 
   useSwitchInput({
     enabled: !gateOpen,
+    oneSwitch: settings.oneSwitch,
+    latched: state.phase === "latched",
+    pressCommitHoldMs: settings.pressCommitHoldMs,
     gamepadInButton: settings.gamepadInButton,
     gamepadCommitButton: settings.gamepadCommitButton,
     onIn: () => dispatch({ type: "pressIn" }),

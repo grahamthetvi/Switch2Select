@@ -76,6 +76,9 @@ export function TwoChoice({
 
   useSwitchInput({
     enabled: !gateOpen && Boolean(pair[0] && pair[1]),
+    oneSwitch: library.settings.oneSwitch,
+    latched: state.phase === "latched",
+    pressCommitHoldMs: library.settings.pressCommitHoldMs,
     gamepadInButton: library.settings.gamepadInButton,
     gamepadCommitButton: library.settings.gamepadCommitButton,
     onIn: () => dispatch({ type: "pressIn" }),

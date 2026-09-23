@@ -45,6 +45,7 @@ export interface AppSettings {
   pressCommitHoldMs: number;
   gamepadInButton: number;
   gamepadCommitButton: number;
+  oneSwitch: boolean;
 }
 
 export const defaultSettings: AppSettings = {
@@ -78,6 +79,7 @@ export const defaultSettings: AppSettings = {
   pressCommitHoldMs: 700,
   gamepadInButton: 0,
   gamepadCommitButton: 1,
+  oneSwitch: false,
 };
 
 function hexColor(value: unknown, fallback: string): string {
@@ -144,5 +146,6 @@ export function normalizeSettings(value: Partial<AppSettings> | null | undefined
     pressCommitHoldMs,
     gamepadInButton: clamp(Math.round(merged.gamepadInButton), 0, 15),
     gamepadCommitButton: clamp(Math.round(merged.gamepadCommitButton), 0, 15),
+    oneSwitch: Boolean(merged.oneSwitch),
   };
 }
