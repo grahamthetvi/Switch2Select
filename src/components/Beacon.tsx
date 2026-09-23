@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
-import { labelStyle, photoStyle } from "../lib/visualStyle";
+import { CutoutPhoto } from "./CutoutPhoto";
+import { labelStyle } from "../lib/visualStyle";
 import type { AppSettings, VocabularyItem } from "../types";
 
 export function Beacon({
@@ -38,14 +39,6 @@ export function Beacon({
   ]
     .filter(Boolean)
     .join(" ");
-  const imageStyle = photoStyle({
-    imageX: item.imageX,
-    imageY: item.imageY,
-    imageZoom: item.imageZoom,
-    outlineEnabled: settings.photoOutlineEnabled,
-    outlineColor,
-    outlineThickness: settings.photoOutlineThickness,
-  });
   const textStyle = labelStyle({
     fontSize: settings.labelFontSize,
     textColor: settings.labelTextColor,
@@ -61,7 +54,16 @@ export function Beacon({
       data-label={item.label}
     >
       <div className={motion ? "beacon-frame arrive" : "beacon-frame"} key={attentionKey}>
-        <img src={url} alt={item.label} draggable={false} style={imageStyle} />
+        <CutoutPhoto
+          src={url}
+          alt={item.label}
+          imageX={item.imageX}
+          imageY={item.imageY}
+          imageZoom={item.imageZoom}
+          outlineEnabled={settings.photoOutlineEnabled}
+          outlineColor={outlineColor}
+          outlineThickness={settings.photoOutlineThickness}
+        />
       </div>
       {showLabel ? (
         <p className="beacon-label" style={textStyle}>

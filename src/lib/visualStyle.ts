@@ -1,37 +1,12 @@
 import type { CSSProperties } from "react";
 
-/** Type Talk–style letter bubble: a filled ring of text-shadow offsets. */
-export function textBubbleShadow(color: string, thickness: number): string {
-  const size = Math.max(0, Math.round(thickness));
-  if (size <= 0) return "none";
-  const shadows: string[] = [];
-  for (let x = -size; x <= size; x += 1) {
-    for (let y = -size; y <= size; y += 1) {
-      if (x === 0 && y === 0) continue;
-      shadows.push(`${x}px ${y}px 0 ${color}`);
-    }
-  }
-  return shadows.join(", ");
-}
-
 /**
- * Book Maker–style object outline via radial drop-shadows.
- * Follows opaque pixels (works best on cut-out PNGs).
+ * Letter bubble as one text stroke.
+ * A filled text-shadow disk is one shadow per pixel of thickness squared
+ * (about 600 shadows at the thickest setting) and that paint freezes the tab.
+ * Stroke width is twice the thickness because the stroke is centered on the
+ * glyph; paint-order keeps the word color on top.
  */
-export function photoOutlineFilter(color: string, thickness: number): string {
-  const radius = Math.max(0, Math.round(thickness));
-  if (radius <= 0) return "none";
-  const steps = Math.max(12, Math.ceil(2 * Math.PI * radius));
-  const shadows: string[] = [];
-  for (let i = 0; i < steps; i += 1) {
-    const angle = (i / steps) * Math.PI * 2;
-    const x = Math.cos(angle) * radius;
-    const y = Math.sin(angle) * radius;
-    shadows.push(`drop-shadow(${x.toFixed(2)}px ${y.toFixed(2)}px 0 ${color})`);
-  }
-  return shadows.join(" ");
-}
-
 export function labelStyle(options: {
   fontSize: number;
   textColor: string;
@@ -39,28 +14,33 @@ export function labelStyle(options: {
   bubbleColor: string;
   bubbleThickness: number;
 }): CSSProperties {
+  const thickness = options.bubbleEnabled ? Math.max(0, Math.round(options.bubbleThickness)) : 0;
   return {
     fontSize: `${options.fontSize}px`,
     color: options.textColor,
-    textShadow: options.bubbleEnabled
-      ? textBubbleShadow(options.bubbleColor, options.bubbleThickness)
-      : "none",
+    WebkitTextStroke: thickness > 0 ? `${thickness * 2}px ${options.bubbleColor}` : "0px transparent",
+    paintOrder: "stroke fill",
   };
 }
 
+/**
+ * Photo outline reference. The outline itself is one SVG morphology filter
+ * (see CutoutPhoto). A ring of drop-shadow() copies — one per pixel around
+ * the circumference — repaints the full photo on the main thread and makes
+ * the browser report the page as unresponsive.
+ */
 export function photoStyle(options: {
   imageX: number;
   imageY: number;
   imageZoom: number;
   outlineEnabled: boolean;
-  outlineColor: string;
   outlineThickness: number;
+  outlineFilterId?: string;
 }): CSSProperties {
-  const outline = options.outlineEnabled
-    ? photoOutlineFilter(options.outlineColor, options.outlineThickness)
-    : "none";
+  const filterId = options.outlineFilterId;
+  const outlined = Boolean(options.outlineEnabled && options.outlineThickness > 0 && filterId);
   return {
     transform: `translate(${options.imageX}%, ${options.imageY}%) scale(${options.imageZoom})`,
-    filter: outline === "none" ? undefined : outline,
+    filter: outlined && filterId ? `url(#${filterId})` : undefined,
   };
 }
