@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
+import { CutoutPhoto } from "../components/CutoutPhoto";
 import { PartnerPage } from "../components/PartnerPage";
 import { exportLibrary, importLibrary, settingsFromBackup } from "../lib/backup";
 import { fitImage } from "../lib/images";
 import { removePhotoBackground } from "../lib/removeBackground";
 import { canPlace, childrenOf } from "../lib/tree";
-import { labelStyle, photoStyle } from "../lib/visualStyle";
+import { labelStyle } from "../lib/visualStyle";
 import type { ViewId } from "../nav";
 import { useLibrary } from "../state/LibraryContext";
 import type { VocabularyItem } from "../types";
@@ -282,17 +283,15 @@ export function Library({ request }: { request: (view: ViewId) => void }) {
           }}
         >
           <div className="preview-field" data-field={library.settings.field}>
-            <img
+            <CutoutPhoto
               src={previewUrl}
               alt=""
-              style={photoStyle({
-                imageX: draft.imageX,
-                imageY: draft.imageY,
-                imageZoom: draft.imageZoom,
-                outlineEnabled: library.settings.photoOutlineEnabled,
-                outlineColor: draft.colorAccent ?? library.settings.outlineColor,
-                outlineThickness: library.settings.photoOutlineThickness,
-              })}
+              imageX={draft.imageX}
+              imageY={draft.imageY}
+              imageZoom={draft.imageZoom}
+              outlineEnabled={library.settings.photoOutlineEnabled}
+              outlineColor={draft.colorAccent ?? library.settings.outlineColor}
+              outlineThickness={library.settings.photoOutlineThickness}
             />
             {library.settings.showChildLabel ? (
               <p

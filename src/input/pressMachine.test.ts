@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { choiceViewChanged, pressViewChanged } from "./useMachine";
 import { defaultSettings } from "../types";
 import {
   type ChoiceConfig,
@@ -401,5 +402,25 @@ describe("two-choice", () => {
     expect(current.phase).toBe("speaking");
     expect(current.side).toBe(1);
     expect(current.speech).toBe("utterance");
+  });
+});
+
+describe("paint gating", () => {
+  it("keeps clock ticks off the picture view", () => {
+    const prev = initialPressState(3);
+    const clock = reducePress(prev, { type: "tick", dt: 16 }, config);
+    expect(clock.visibleMs).toBe(16);
+    expect(pressViewChanged(prev, clock)).toBe(false);
+    const turned = reducePress(clock, { type: "tick", dt: config.rotationMs }, config);
+    expect(pressViewChanged(clock, turned)).toBe(true);
+  });
+
+  it("keeps choice clocks off the picture view", () => {
+    const prev = initialChoiceState();
+    const clock = reduceChoice(prev, { type: "tick", dt: choiceConfig.appearDwellMs }, choiceConfig);
+    expect(clock.visibleMs).toBe(choiceConfig.appearDwellMs);
+    expect(choiceViewChanged(prev, clock)).toBe(false);
+    const latched = reduceChoice(clock, { type: "pressIn", side: 0 }, choiceConfig);
+    expect(choiceViewChanged(clock, latched)).toBe(true);
   });
 });
