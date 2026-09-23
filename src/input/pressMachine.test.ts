@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { defaultSettings } from "../types";
 import {
   type ChoiceConfig,
   type PressConfig,
+  choiceConfigFrom,
   initialChoiceState,
   initialPressState,
   reduceChoice,
@@ -25,6 +27,7 @@ const choiceConfig: ChoiceConfig = {
   speakHoldMs: 4000,
   autoResumeAfterSpeak: false,
   previewAudio: true,
+  offerScanMs: 0,
 };
 
 function ready() {
@@ -296,6 +299,37 @@ describe("two-choice", () => {
     const state = reduceChoice(shown(), { type: "tick", dt: 12000 }, choiceConfig);
     expect(state.offer).toBe(0);
     expect(state.phase).toBe("idle");
+  });
+
+  it("one-switch scanning moves the offer after the scan time", () => {
+    const scanning = { ...choiceConfig, offerScanMs: 6000 };
+    const ready = reduceChoice(initialChoiceState(), { type: "tick", dt: scanning.appearDwellMs }, scanning);
+    const next = reduceChoice(ready, { type: "tick", dt: scanning.offerScanMs - scanning.appearDwellMs }, scanning);
+    expect(next.offer).toBe(1);
+    expect(next.visibleMs).toBe(0);
+    expect(next.phase).toBe("idle");
+  });
+
+  it("one-switch scanning does not move a latched offer", () => {
+    const scanning = { ...choiceConfig, offerScanMs: 6000 };
+    let state = reduceChoice(shown(), { type: "pressIn" }, scanning);
+    state = reduceChoice(state, { type: "tick", dt: scanning.offerScanMs }, scanning);
+    expect(state.phase).toBe("latched");
+    expect(state.offer).toBe(0);
+  });
+
+  it("one-switch scanning waits while paused", () => {
+    const scanning = { ...choiceConfig, offerScanMs: 6000 };
+    let state = reduceChoice(shown(), { type: "pause" }, scanning);
+    state = reduceChoice(state, { type: "tick", dt: scanning.offerScanMs * 2 }, scanning);
+    expect(state.offer).toBe(0);
+    expect(state.phase).toBe("idle");
+    expect(state.paused).toBe(true);
+  });
+
+  it("choiceConfigFrom scans only with one switch", () => {
+    expect(choiceConfigFrom(defaultSettings).offerScanMs).toBe(0);
+    expect(choiceConfigFrom({ ...defaultSettings, oneSwitch: true }).offerScanMs).toBe(defaultSettings.rotationMs);
   });
 
   it("previous and next move the offer and leave it there", () => {

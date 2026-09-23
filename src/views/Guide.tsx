@@ -23,12 +23,17 @@ export function Guide({ request }: { request: (view: ViewId) => void }) {
       <section className="panel">
         <h2>On this device</h2>
         <ul>
-          <li>Space, or a short hold on the picture: light press</li>
+          <li>Space, or a short hold on the picture: light press. With One switch on, Space again says it.</li>
           <li>Enter, a longer hold, or a right-click: deep press</li>
           <li>Escape: let go</li>
           <li>Left and right arrows: previous and next picture</li>
         </ul>
         <p>A gamepad can use two buttons. Set which ones in Practice. Button 0 and button 1 are the start.</p>
+      </section>
+      <section className="panel">
+        <h2>A one switch</h2>
+        <p>Turn on One switch in Settings. Space, or one gamepad button, does both jobs. First press holds the picture. The same press again says it. Holding the switch also says it. Wait to let go. Nothing needs Enter.</p>
+        <p>In two pictures, the offer moves by itself. Then the same two presses.</p>
       </section>
       <section className="panel">
         <h2>A dual switch</h2>

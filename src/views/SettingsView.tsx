@@ -311,6 +311,23 @@ export function SettingsView({ request }: { request: (view: ViewId) => void }) {
       </section>
 
       <section className="panel">
+        <h2>Presses</h2>
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={settings.oneSwitch}
+            onChange={(event) => updateSettings({ oneSwitch: event.target.checked })}
+          />
+          <span>One switch</span>
+        </label>
+        <p className="hint">
+          {settings.oneSwitch
+            ? "First press means this one. The same press again says it. Holding the switch also says it. Wait to let go. In two pictures, the offer takes turns by itself."
+            : "Space or one button is a light press. Enter or a second button is a deep press. Turn this on if they only have one switch."}
+        </p>
+      </section>
+
+      <section className="panel">
         <h2>Partner</h2>
         <label className="check">
           <input

@@ -32,6 +32,9 @@ export function Calibration({ request }: { request: (view: ViewId) => void }) {
 
   useSwitchInput({
     enabled: true,
+    oneSwitch: settings.oneSwitch,
+    latched: state.phase === "latched",
+    pressCommitHoldMs: settings.pressCommitHoldMs,
     gamepadInButton: settings.gamepadInButton,
     gamepadCommitButton: settings.gamepadCommitButton,
     onIn: () => dispatch({ type: "pressIn" }),
@@ -58,13 +61,19 @@ export function Calibration({ request }: { request: (view: ViewId) => void }) {
   const status = state.phase === "latched"
     ? "Light press. This one."
     : state.phase === "speaking" || state.phase === "holding"
-      ? "Deep press. Say it."
-      : "Hold the circle. A short hold finds it. A longer hold says it.";
+      ? settings.oneSwitch
+        ? "Same switch again. Say it."
+        : "Deep press. Say it."
+      : settings.oneSwitch
+        ? "One switch. First press finds it. The same press again, or a hold, says it."
+        : "Hold the circle. A short hold finds it. A longer hold says it.";
 
   return (
     <PartnerPage
       title="Practice"
-      lede="Light press means this one. Deep press says it. The same two presses work everywhere."
+      lede={settings.oneSwitch
+        ? "One switch does both jobs. First press means this one. The same press again says it."
+        : "Light press means this one. Deep press says it. The same two presses work everywhere."}
       onBack={() => request("talk")}
     >
       <div className="practice-wrap">
@@ -103,9 +112,17 @@ export function Calibration({ request }: { request: (view: ViewId) => void }) {
             onChange={(event) => updateSettings({ pressCommitHoldMs: Number(event.target.value) })}
           />
         </label>
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={settings.oneSwitch}
+            onChange={(event) => updateSettings({ oneSwitch: event.target.checked })}
+          />
+          <span>One switch: same button for both presses</span>
+        </label>
         <h2>Gamepad buttons</h2>
         <label className="stack">
-          <span>Light press button {settings.gamepadInButton}</span>
+          <span>{settings.oneSwitch ? "Switch button" : "Light press button"} {settings.gamepadInButton}</span>
           <input
             type="number"
             min={0}
@@ -114,17 +131,23 @@ export function Calibration({ request }: { request: (view: ViewId) => void }) {
             onChange={(event) => updateSettings({ gamepadInButton: Number(event.target.value) })}
           />
         </label>
-        <label className="stack">
-          <span>Deep press button {settings.gamepadCommitButton}</span>
-          <input
-            type="number"
-            min={0}
-            max={15}
-            value={settings.gamepadCommitButton}
-            onChange={(event) => updateSettings({ gamepadCommitButton: Number(event.target.value) })}
-          />
-        </label>
-        <p className="hint">Keyboard: Space is light, Enter is deep, Escape lets go. Arrows move the picture.</p>
+        {settings.oneSwitch ? null : (
+          <label className="stack">
+            <span>Deep press button {settings.gamepadCommitButton}</span>
+            <input
+              type="number"
+              min={0}
+              max={15}
+              value={settings.gamepadCommitButton}
+              onChange={(event) => updateSettings({ gamepadCommitButton: Number(event.target.value) })}
+            />
+          </label>
+        )}
+        <p className="hint">
+          {settings.oneSwitch
+            ? "Keyboard: Space is both presses. Hold it to say it. Escape lets go. Arrows move the picture."
+            : "Keyboard: Space is light, Enter is deep, Escape lets go. Arrows move the picture."}
+        </p>
       </section>
     </PartnerPage>
   );
