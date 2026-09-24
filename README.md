@@ -4,7 +4,7 @@ One picture at a time, for a child whose vision is unreliable and whose reliable
 
 Light press means “this one.” Deep press says it. The picture stays still. The partner can finish the turn even if gaze never settles.
 
-Photos stay in the browser. Nothing is uploaded.
+Photos stay in the browser. Nothing is uploaded. The first open shows a welcome page with how the presses work and the privacy policy. After that, it opens on the pictures. Welcome and privacy stays under Settings.
 
 ## Run
 

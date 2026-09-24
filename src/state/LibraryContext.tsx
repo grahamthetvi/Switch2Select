@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import {
   deleteItem as deleteStoredItem,
   loadLibrary,
+  markWelcomeSeen,
   replaceLibrary as replaceStoredLibrary,
   saveItem as saveStoredItem,
   saveSettings,
@@ -15,6 +16,8 @@ interface LibraryValue {
   items: VocabularyItem[];
   settings: AppSettings;
   urls: Map<string, string>;
+  welcomed: boolean;
+  acknowledgeWelcome: () => Promise<void>;
   updateSettings: (patch: Partial<AppSettings>) => void;
   saveItem: (item: VocabularyItem) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
@@ -28,6 +31,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<VocabularyItem[]>([]);
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
+  const [welcomed, setWelcomed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -36,6 +40,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
         setItems(loaded.items);
         setSettings(loaded.settings);
+        setWelcomed(loaded.welcomed);
         setReady(true);
         requestPersistentStore();
       })
@@ -68,6 +73,11 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       items,
       settings,
       urls,
+      welcomed,
+      async acknowledgeWelcome() {
+        await markWelcomeSeen();
+        setWelcomed(true);
+      },
       updateSettings(patch) {
         const next = normalizeSettings({ ...settings, ...patch });
         setSettings(next);
@@ -94,7 +104,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         setSettings(normalized);
       },
     };
-  }, [ready, error, items, settings, urls]);
+  }, [ready, error, items, settings, urls, welcomed]);
 
   return <LibraryContext.Provider value={value}>{children}</LibraryContext.Provider>;
 }

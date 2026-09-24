@@ -354,6 +354,9 @@ export function SettingsView({ request }: { request: (view: ViewId) => void }) {
           <button type="button" className="button" onClick={() => request("guide")}>
             Partner guide
           </button>
+          <button type="button" className="button" onClick={() => request("welcome")}>
+            Welcome and privacy
+          </button>
         </div>
       </section>
     </PartnerPage>

@@ -12,6 +12,7 @@ const Library = lazy(() => import("./views/Library").then((module) => ({ default
 const SettingsView = lazy(() => import("./views/SettingsView").then((module) => ({ default: module.SettingsView })));
 const Calibration = lazy(() => import("./views/Calibration").then((module) => ({ default: module.Calibration })));
 const Guide = lazy(() => import("./views/Guide").then((module) => ({ default: module.Guide })));
+const Welcome = lazy(() => import("./views/Welcome").then((module) => ({ default: module.Welcome })));
 
 export function App() {
   return (
@@ -24,7 +25,7 @@ export function App() {
 }
 
 function Shell() {
-  const { settings } = useLibrary();
+  const { ready, settings, welcomed } = useLibrary();
   const motionOn = useMotionOn(settings.motion);
   useAutoFullscreen(settings.autoFullscreen);
   const initial = viewFromHash(window.location.hash);
@@ -32,6 +33,13 @@ function Shell() {
   const [pending, setPending] = useState<ViewId | null>(viewNeedsGate(initial) ? initial : null);
   const [unlocked, setUnlocked] = useState(false);
   const ownNav = useRef(false);
+  const [welcomeChecked, setWelcomeChecked] = useState(false);
+
+  useEffect(() => {
+    if (!ready || welcomeChecked) return;
+    if (!welcomed && view === "talk" && pending === null) go("welcome");
+    setWelcomeChecked(true);
+  }, [ready, welcomed, view, pending, welcomeChecked]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -96,12 +104,14 @@ function Shell() {
   return (
     <>
       <Suspense fallback={<p className="wait">One moment.</p>}>
-        {view === "talk" ? <Communicate gateOpen={pending !== null} request={request} /> : null}
+        {view === "talk" && !welcomeChecked ? <p className="wait">One moment.</p> : null}
+        {view === "talk" && welcomeChecked ? <Communicate gateOpen={pending !== null} request={request} /> : null}
         {view === "two" ? <TwoChoice gateOpen={pending !== null} request={request} /> : null}
         {view === "library" ? <Library request={request} /> : null}
         {view === "settings" ? <SettingsView request={request} /> : null}
         {view === "calibrate" ? <Calibration request={request} /> : null}
         {view === "guide" ? <Guide request={request} /> : null}
+        {view === "welcome" ? <Welcome request={request} /> : null}
       </Suspense>
       <SettingsCornerButton onRequest={request} hidden={view === "settings"} />
       {pending ? (

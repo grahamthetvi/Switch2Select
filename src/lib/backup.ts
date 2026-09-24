@@ -1,5 +1,6 @@
 import JSZip from "jszip";
-import { type AppSettings, type VocabularyItem, normalizeSettings } from "../types";
+import { libraryTreeError } from "./tree";
+import { type AppSettings, type VocabularyItem, clamp, normalizeSettings } from "../types";
 
 interface BackupItem {
   id: string;
@@ -93,23 +94,30 @@ export async function importLibrary(
     if (!image) throw new Error("That backup is missing a picture file.");
     const audioFile = typeof entry.audioFile === "string" ? entry.audioFile : null;
     const audio = audioFile ? zip.file(audioFile) : null;
+    const label = typeof entry.label === "string" && entry.label.trim() ? entry.label.trim() : "Picture";
+    const spoken = typeof entry.utterance === "string" && entry.utterance.trim() ? entry.utterance.trim() : label;
+    const accent = typeof entry.colorAccent === "string" && /^#[0-9a-fA-F]{6}$/.test(entry.colorAccent)
+      ? entry.colorAccent
+      : null;
     const item: VocabularyItem = {
       id: entry.id,
-      label: typeof entry.label === "string" && entry.label.trim() ? entry.label : "Picture",
-      utterance: typeof entry.utterance === "string" && entry.utterance.trim() ? entry.utterance : "Picture",
+      label,
+      utterance: spoken,
       imageBlob: await image.async("blob"),
       parentId: typeof entry.parentId === "string" ? entry.parentId : null,
-      colorAccent: typeof entry.colorAccent === "string" ? entry.colorAccent : null,
-      order: typeof entry.order === "number" ? entry.order : 0,
-      active: Boolean(entry.active),
-      demo: Boolean(entry.demo),
-      imageZoom: typeof entry.imageZoom === "number" ? entry.imageZoom : 1,
-      imageX: typeof entry.imageX === "number" ? entry.imageX : 0,
-      imageY: typeof entry.imageY === "number" ? entry.imageY : 0,
+      colorAccent: accent,
+      order: typeof entry.order === "number" && Number.isFinite(entry.order) ? entry.order : 0,
+      active: entry.active === true,
+      demo: entry.demo === true,
+      imageZoom: clamp(typeof entry.imageZoom === "number" ? entry.imageZoom : 1, 0.6, 2.2),
+      imageX: clamp(typeof entry.imageX === "number" ? entry.imageX : 0, -40, 40),
+      imageY: clamp(typeof entry.imageY === "number" ? entry.imageY : 0, -40, 40),
     };
     if (audio) item.audioBlob = await audio.async("blob");
     items.push(item);
   }
+  const treeError = libraryTreeError(items);
+  if (treeError) throw new Error(treeError);
   const rawSettings = isRecord(parsed.settings) ? parsed.settings : {};
   const includesPin = Object.prototype.hasOwnProperty.call(rawSettings, "pin");
   const settings = normalizeSettings(rawSettings as Partial<AppSettings>);
