@@ -26,7 +26,7 @@ The dev server sends `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin
 | Gamepad | Button 0 (change in Practice) | Button 1, or the same button again with One switch on | |
 | Left / right arrows | | | Previous / next picture |
 
-A dual switch can send Space and Enter. One switch uses Space twice, or a hold, after you turn on **One switch** in Settings. An adapter can also dispatch:
+A dual switch can send Space and Enter. One switch uses Space twice, or a hold, after you turn on **One switch** in Settings. A second press during the short wait still counts, and it speaks when that wait ends. Letting go in two pictures keeps the offered picture for a full turn. An adapter can also dispatch:
 
 ```js
 window.dispatchEvent(new CustomEvent("switch2select:input", {

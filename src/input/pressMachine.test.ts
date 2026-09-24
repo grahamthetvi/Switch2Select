@@ -245,6 +245,28 @@ describe("rotating single target", () => {
     expect(committed.speech).toBe("utterance");
   });
 
+  it("a one-switch press during the preview wait speaks when that wait ends", () => {
+    let state = reducePress(ready(), { type: "pressIn" }, config);
+    state = reducePress(state, { type: "tick", dt: 1 }, config);
+    state = reducePress(state, { type: "pressCommit", remember: true }, config);
+    expect(state.phase).toBe("latched");
+    expect(state.commitArmed).toBe(true);
+    expect(state.speech).not.toBe("utterance");
+    state = reducePress(state, { type: "tick", dt: config.previewHoldMs }, config);
+    expect(state.phase).toBe("speaking");
+    expect(state.speech).toBe("utterance");
+    expect(state.commitArmed).toBe(false);
+  });
+
+  it("an early deep press without one switch still waits for another press", () => {
+    let state = reducePress(ready(), { type: "pressIn" }, config);
+    state = reducePress(state, { type: "tick", dt: 1 }, config);
+    state = reducePress(state, { type: "pressCommit" }, config);
+    state = reducePress(state, { type: "tick", dt: config.previewHoldMs }, config);
+    expect(state.phase).toBe("latched");
+    expect(state.commitArmed).toBe(false);
+  });
+
   it("ready does not skip the latch", () => {
     const next = reducePress(ready(), { type: "pressCommit", ready: true }, config);
     expect(next.phase).toBe("rotating");
@@ -316,6 +338,42 @@ describe("two-choice", () => {
     let state = reduceChoice(shown(), { type: "pressIn" }, scanning);
     state = reduceChoice(state, { type: "tick", dt: scanning.offerScanMs }, scanning);
     expect(state.phase).toBe("latched");
+    expect(state.offer).toBe(0);
+  });
+
+  it("a one-switch press during the preview wait opens or speaks when that wait ends", () => {
+    const scanning = { ...choiceConfig, offerScanMs: 6000 };
+    let state = reduceChoice(shown(), { type: "pressIn" }, scanning);
+    state = reduceChoice(state, { type: "pressCommit", effect: "open", remember: true }, scanning);
+    expect(state.phase).toBe("latched");
+    expect(state.commitArmed).toBe("open");
+    state = reduceChoice(state, { type: "tick", dt: scanning.previewHoldMs }, scanning);
+    expect(state.nav).toBe("into");
+    expect(state.phase).toBe("idle");
+    expect(state.commitArmed).toBeNull();
+  });
+
+  it("letting go keeps the offered picture for a full turn", () => {
+    const scanning = { ...choiceConfig, offerScanMs: 6000 };
+    let state = reduceChoice(shown(), { type: "pressIn" }, scanning);
+    state = reduceChoice(state, { type: "tick", dt: scanning.offerScanMs }, scanning);
+    state = reduceChoice(state, { type: "cancel" }, scanning);
+    expect(state.phase).toBe("idle");
+    expect(state.offer).toBe(0);
+    expect(state.visibleMs).toBe(scanning.appearDwellMs);
+    state = reduceChoice(state, { type: "tick", dt: scanning.offerScanMs - scanning.appearDwellMs - 1 }, scanning);
+    expect(state.offer).toBe(0);
+    state = reduceChoice(state, { type: "tick", dt: 1 }, scanning);
+    expect(state.offer).toBe(1);
+  });
+
+  it("a partner step does not let the offer jump again on the next moment", () => {
+    const scanning = { ...choiceConfig, offerScanMs: 6000 };
+    let state = reduceChoice(shown(), { type: "tick", dt: scanning.offerScanMs }, scanning);
+    expect(state.offer).toBe(1);
+    state = reduceChoice(state, { type: "next" }, scanning);
+    expect(state.offer).toBe(0);
+    state = reduceChoice(state, { type: "tick", dt: scanning.offerScanMs - scanning.appearDwellMs - 1 }, scanning);
     expect(state.offer).toBe(0);
   });
 

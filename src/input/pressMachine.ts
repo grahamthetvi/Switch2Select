@@ -14,6 +14,8 @@ export interface PressState {
   speechSeq: number;
   confirm: boolean;
   appearSeq: number;
+  /** A one-switch press already asked to speak, before the preview wait finished. */
+  commitArmed: boolean;
 }
 
 export interface PressConfig {
@@ -29,7 +31,7 @@ export interface PressConfig {
 export type PressEvent =
   | { type: "tick"; dt: number }
   | { type: "pressIn" }
-  | { type: "pressCommit"; ready?: boolean }
+  | { type: "pressCommit"; ready?: boolean; remember?: boolean }
   | { type: "cancel" }
   | { type: "pause" }
   | { type: "resume" }
@@ -52,6 +54,8 @@ export interface ChoiceState {
   nav: "into" | "back" | null;
   navSeq: number;
   appearSeq: number;
+  /** A one-switch press already asked to speak or open, before the preview wait finished. */
+  commitArmed: "speak" | "open" | null;
 }
 
 export interface ChoiceConfig {
@@ -67,7 +71,7 @@ export interface ChoiceConfig {
 export type ChoiceEvent =
   | { type: "tick"; dt: number }
   | { type: "pressIn"; side?: 0 | 1 }
-  | { type: "pressCommit"; effect: "speak" | "open"; ready?: boolean; side?: 0 | 1 }
+  | { type: "pressCommit"; effect: "speak" | "open"; ready?: boolean; remember?: boolean; side?: 0 | 1 }
   | { type: "cancel" }
   | { type: "pause" }
   | { type: "resume" }
@@ -114,6 +118,7 @@ export function initialPressState(itemCount: number): PressState {
     speechSeq: 0,
     confirm: false,
     appearSeq: 1,
+    commitArmed: false,
   };
 }
 
@@ -132,6 +137,7 @@ export function initialChoiceState(): ChoiceState {
     nav: null,
     navSeq: 0,
     appearSeq: 1,
+    commitArmed: null,
   };
 }
 
@@ -150,6 +156,39 @@ function pausedLatchAdvance(phase: string, latchMs: number, dt: number, previewH
   return Math.min(previewHoldMs, latchMs + dt);
 }
 
+function speakPress(state: PressState): PressState {
+  return withCue(state, "utterance", {
+    phase: "speaking",
+    confirm: true,
+    commitArmed: false,
+  });
+}
+
+/** After a one-switch let-go, the same picture stays ready and gets a full turn before the offer moves. */
+function settledOfferMs(config: ChoiceConfig, visibleMs: number): number {
+  return config.offerScanMs > 0 ? config.appearDwellMs : visibleMs;
+}
+
+function finishChoice(state: ChoiceState, effect: "speak" | "open"): ChoiceState {
+  if (effect === "open") {
+    const next = withCue(state, "stop", {
+      phase: "idle",
+      latchMs: 0,
+      visibleMs: 0,
+      offer: 0,
+      confirm: false,
+      commitArmed: null,
+      appearSeq: state.appearSeq + 1,
+    });
+    return { ...next, nav: "into", navSeq: state.navSeq + 1 };
+  }
+  return withCue(state, "utterance", {
+    phase: "speaking",
+    confirm: true,
+    commitArmed: null,
+  });
+}
+
 function showIndex(state: PressState, index: number, paused: boolean): PressState {
   const count = state.itemCount;
   const wrapped = count <= 0 ? 0 : ((index % count) + count) % count;
@@ -162,6 +201,7 @@ function showIndex(state: PressState, index: number, paused: boolean): PressStat
     latchMs: 0,
     holdMs: 0,
     confirm: false,
+    commitArmed: false,
     appearSeq: state.appearSeq + 1,
   });
 }
@@ -175,8 +215,12 @@ export function reducePress(state: PressState, event: PressEvent, config: PressC
           ? Math.min(config.appearDwellMs, state.visibleMs + event.dt)
           : state.visibleMs;
         const latchMs = pausedLatchAdvance(state.phase, state.latchMs, event.dt, config.previewHoldMs);
+        const nextLatch = latchMs ?? state.latchMs;
+        if (state.commitArmed && state.phase === "latched" && nextLatch >= config.previewHoldMs) {
+          return { ...speakPress(state), visibleMs, latchMs: nextLatch };
+        }
         if (visibleMs === state.visibleMs && latchMs === null) return state;
-        return { ...state, visibleMs, latchMs: latchMs ?? state.latchMs };
+        return { ...state, visibleMs, latchMs: nextLatch };
       }
       if (state.phase === "rotating") {
         const visibleMs = state.visibleMs + event.dt;
@@ -186,6 +230,9 @@ export function reducePress(state: PressState, event: PressEvent, config: PressC
       }
       if (state.phase === "latched") {
         const latchMs = state.latchMs + event.dt;
+        if (state.commitArmed && latchMs >= config.previewHoldMs) {
+          return speakPress({ ...state, latchMs });
+        }
         if (latchMs < config.latchTimeoutMs) return { ...state, latchMs };
         return withCue(state, "stop", {
           phase: "rotating",
@@ -193,6 +240,7 @@ export function reducePress(state: PressState, event: PressEvent, config: PressC
           latchMs: 0,
           holdMs: 0,
           confirm: false,
+          commitArmed: false,
           appearSeq: state.appearSeq + 1,
         });
       }
@@ -220,15 +268,16 @@ export function reducePress(state: PressState, event: PressEvent, config: PressC
         latchMs: 0,
         holdMs: 0,
         confirm: false,
+        commitArmed: false,
       });
     }
     case "pressCommit": {
       if (state.itemCount <= 0 || state.phase !== "latched") return state;
-      if (!event.ready && state.latchMs < config.previewHoldMs) return state;
-      return withCue(state, "utterance", {
-        phase: "speaking",
-        confirm: true,
-      });
+      if (!event.ready && state.latchMs < config.previewHoldMs) {
+        if (!event.remember || state.commitArmed) return state;
+        return { ...state, commitArmed: true };
+      }
+      return speakPress(state);
     }
     case "cancel": {
       if (state.phase === "rotating") return state;
@@ -259,6 +308,7 @@ export function reducePress(state: PressState, event: PressEvent, config: PressC
           latchMs: 0,
           holdMs: 0,
           confirm: false,
+          commitArmed: false,
         });
       }
       return {
@@ -287,19 +337,27 @@ export function reduceChoice(state: ChoiceState, event: ChoiceEvent, config: Cho
           ? Math.min(config.appearDwellMs, state.visibleMs + event.dt)
           : state.visibleMs;
         const latchMs = pausedLatchAdvance(state.phase, state.latchMs, event.dt, config.previewHoldMs);
+        const nextLatch = latchMs ?? state.latchMs;
+        if (state.commitArmed && state.phase === "latched" && nextLatch >= config.previewHoldMs) {
+          return finishChoice({ ...state, visibleMs, latchMs: nextLatch }, state.commitArmed);
+        }
         if (visibleMs === state.visibleMs && latchMs === null) return state;
-        return { ...state, visibleMs, latchMs: latchMs ?? state.latchMs };
+        return { ...state, visibleMs, latchMs: nextLatch };
       }
       const visibleMs = state.visibleMs + event.dt;
       if (state.phase === "latched") {
         const latchMs = state.latchMs + event.dt;
+        if (state.commitArmed && latchMs >= config.previewHoldMs) {
+          return finishChoice({ ...state, visibleMs, latchMs }, state.commitArmed);
+        }
         if (latchMs < config.latchTimeoutMs) return { ...state, visibleMs, latchMs };
         return withCue(state, "stop", {
           phase: "idle",
           side: null,
-          visibleMs,
+          visibleMs: settledOfferMs(config, visibleMs),
           latchMs: 0,
           confirm: false,
+          commitArmed: null,
           appearSeq: state.appearSeq + 1,
         });
       }
@@ -309,9 +367,10 @@ export function reduceChoice(state: ChoiceState, event: ChoiceEvent, config: Cho
         return withCue(state, null, {
           phase: "idle",
           side: null,
-          visibleMs,
+          visibleMs: settledOfferMs(config, visibleMs),
           holdMs: 0,
           confirm: false,
+          commitArmed: null,
         });
       }
       if (state.phase === "idle" && config.offerScanMs > 0 && visibleMs >= config.offerScanMs) {
@@ -335,35 +394,27 @@ export function reduceChoice(state: ChoiceState, event: ChoiceEvent, config: Cho
         offer: side,
         latchMs: 0,
         confirm: false,
+        commitArmed: null,
       });
     }
     case "pressCommit": {
       if (state.phase !== "latched" || state.side === null) return state;
       if (event.side !== undefined && event.side !== state.side) return state;
-      if (!event.ready && state.latchMs < config.previewHoldMs) return state;
-      if (event.effect === "open") {
-        const next = withCue(state, "stop", {
-          phase: "idle",
-          latchMs: 0,
-          visibleMs: 0,
-          offer: 0,
-          confirm: false,
-          appearSeq: state.appearSeq + 1,
-        });
-        return { ...next, nav: "into", navSeq: state.navSeq + 1 };
+      if (!event.ready && state.latchMs < config.previewHoldMs) {
+        if (!event.remember || state.commitArmed === event.effect) return state;
+        return { ...state, commitArmed: event.effect };
       }
-      return withCue(state, "utterance", {
-        phase: "speaking",
-        confirm: true,
-      });
+      return finishChoice(state, event.effect);
     }
     case "cancel": {
       if (state.phase === "idle") return state;
       return withCue(state, "stop", {
         phase: "idle",
         side: null,
+        visibleMs: settledOfferMs(config, state.visibleMs),
         latchMs: 0,
         confirm: false,
+        commitArmed: null,
       });
     }
     case "pause":
@@ -378,8 +429,10 @@ export function reduceChoice(state: ChoiceState, event: ChoiceEvent, config: Cho
         phase: "idle",
         offer,
         side: null,
+        visibleMs: settledOfferMs(config, state.visibleMs),
         latchMs: 0,
         confirm: false,
+        commitArmed: null,
       });
     }
     case "back": {

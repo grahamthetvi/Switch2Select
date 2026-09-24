@@ -138,7 +138,6 @@ export function useSwitchInput(handlers: SwitchHandlers): void {
         inPressed = inPressed || Boolean(pad.buttons[current.current.gamepadInButton]?.pressed);
         commitPressed = commitPressed || Boolean(pad.buttons[current.current.gamepadCommitButton]?.pressed);
       }
-      const sameButton = current.current.gamepadInButton === current.current.gamepadCommitButton;
       if (inPressed && !prevIn) {
         dispatchLevel.current("in");
         inDownAt = performance.now();
@@ -154,7 +153,7 @@ export function useSwitchInput(handlers: SwitchHandlers): void {
         holdFired = true;
         current.current.onCommit();
       }
-      if (commitPressed && !prevCommit && !(current.current.oneSwitch && sameButton)) {
+      if (commitPressed && !prevCommit && !current.current.oneSwitch) {
         dispatchLevel.current("commit");
       }
       if (!inPressed) {

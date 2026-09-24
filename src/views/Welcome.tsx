@@ -32,6 +32,7 @@ export function Welcome({ request }: { request: (view: ViewId) => void }) {
         <p>Pictures turned on for today take turns, one after another. About three to eight is easier to see.</p>
         <p>Two pictures is a separate way to use the same library. Each branch holds two pictures. A deep press says the picture, or opens the next pair when that picture has two inside it. Back is a partner control. There is no third picture.</p>
         <p>The library is the photos, the short name, and the words to say. A recorded voice, if you add one, is what a deep press plays. Otherwise this device speaks the words.</p>
+        <p>One switch uses the same press twice. The first press means this one. The same press again says it, including when it arrives during the short wait. Holding the switch also says it. In two pictures, the offer moves by itself, and letting go leaves that picture up for a full turn.</p>
         <p>Partner pages — the library, settings, and practice — sit behind a question. A four-number code replaces that question when you set one.</p>
       </section>
       <section className="panel">

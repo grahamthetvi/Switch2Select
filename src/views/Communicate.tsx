@@ -76,7 +76,7 @@ function Talk({
     gamepadInButton: settings.gamepadInButton,
     gamepadCommitButton: settings.gamepadCommitButton,
     onIn: () => dispatch({ type: "pressIn" }),
-    onCommit: () => dispatch({ type: "pressCommit" }),
+    onCommit: () => dispatch({ type: "pressCommit", remember: settings.oneSwitch }),
     onCancel: () => dispatch({ type: "cancel" }),
     onNext: () => dispatch({ type: "next" }),
     onPrev: () => dispatch({ type: "prev" }),
