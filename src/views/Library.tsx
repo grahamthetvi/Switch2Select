@@ -4,7 +4,7 @@ import { PartnerPage } from "../components/PartnerPage";
 import { exportLibrary, importLibrary, settingsFromBackup } from "../lib/backup";
 import { fitImage } from "../lib/images";
 import { removePhotoBackground } from "../lib/removeBackground";
-import { canPlace, childrenOf } from "../lib/tree";
+import { canPlace, childrenOf, openParentId } from "../lib/tree";
 import { labelStyle } from "../lib/visualStyle";
 import type { ViewId } from "../nav";
 import { useLibrary } from "../state/LibraryContext";
@@ -57,11 +57,15 @@ export function Library({ request }: { request: (view: ViewId) => void }) {
     try {
       const imageBlob = await fitImage(file);
       const stem = file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim();
+      const parentId = openParentId(library.items, "draft");
+      if (parentId === null && canPlace(library.items, "draft", null)) {
+        setMessage("The top already has two pictures. Choose Inside before you save.");
+      }
       setDraft({
         id: null,
         label: stem || "Picture",
         utterance: "",
-        parentId: openParent(library.items),
+        parentId,
         colorAccent: null,
         order: library.items.length,
         active: activeCount < 8,
@@ -488,8 +492,3 @@ export function Library({ request }: { request: (view: ViewId) => void }) {
   );
 }
 
-function openParent(items: VocabularyItem[]): string | null {
-  if (canPlace(items, "draft", null) === null) return null;
-  const withRoom = items.find((item) => canPlace(items, "draft", item.id) === null);
-  return withRoom?.id ?? null;
-}

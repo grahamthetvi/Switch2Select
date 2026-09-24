@@ -55,4 +55,28 @@ describe("library backup", () => {
     expect(settingsFromBackup(imported, "9876").pin).toBe("1234");
     expect(settingsFromBackup(imported, "9876").field).toBe("white");
   });
+
+  it("uses the name when the words to say are blank, and refuses a branch with three pictures", async () => {
+    const blob = await exportLibrary([picture()], defaultSettings);
+    const zip = await JSZip.loadAsync(blob);
+    const manifestFile = zip.file("library.json");
+    if (!manifestFile) throw new Error("missing library.json");
+    const manifest = JSON.parse(await manifestFile.async("string")) as {
+      items: Array<Record<string, unknown>>;
+    };
+    const first = manifest.items[0];
+    if (!first) throw new Error("missing picture");
+    first.utterance = "  ";
+    manifest.items.push({ ...first, id: "cup-2", parentId: null, imageFile: "images/cup.png" });
+    manifest.items.push({ ...first, id: "cup-3", parentId: null, imageFile: "images/cup.png" });
+    zip.file("library.json", JSON.stringify(manifest));
+    const crowded = await zip.generateAsync({ type: "blob" });
+    await expect(importLibrary(crowded)).rejects.toThrow("That branch already has two pictures.");
+
+    manifest.items = [first];
+    zip.file("library.json", JSON.stringify(manifest));
+    const quiet = await zip.generateAsync({ type: "blob" });
+    const imported = await importLibrary(quiet);
+    expect(imported.items[0]?.utterance).toBe("Cup");
+  });
 });

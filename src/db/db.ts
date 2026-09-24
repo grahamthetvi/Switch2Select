@@ -78,7 +78,7 @@ async function buildSeed(): Promise<VocabularyItem[]> {
   return items;
 }
 
-export async function loadLibrary(): Promise<{ items: VocabularyItem[]; settings: AppSettings }> {
+export async function loadLibrary(): Promise<{ items: VocabularyItem[]; settings: AppSettings; welcomed: boolean }> {
   const store = await db();
   const seeded = await store.get("meta", "seeded");
   let items = await store.getAll("items");
@@ -90,7 +90,13 @@ export async function loadLibrary(): Promise<{ items: VocabularyItem[]; settings
     await tx.done;
   }
   const stored = await store.get("settings", "app");
-  return { items, settings: normalizeSettings(stored ?? defaultSettings) };
+  const welcomed = Boolean(await store.get("meta", "welcomed"));
+  return { items, settings: normalizeSettings(stored ?? defaultSettings), welcomed };
+}
+
+export async function markWelcomeSeen(): Promise<void> {
+  const store = await db();
+  await store.put("meta", true, "welcomed");
 }
 
 export async function saveSettings(settings: AppSettings): Promise<void> {

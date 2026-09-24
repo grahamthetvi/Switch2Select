@@ -38,7 +38,7 @@ export function Calibration({ request }: { request: (view: ViewId) => void }) {
     gamepadInButton: settings.gamepadInButton,
     gamepadCommitButton: settings.gamepadCommitButton,
     onIn: () => dispatch({ type: "pressIn" }),
-    onCommit: () => dispatch({ type: "pressCommit" }),
+    onCommit: () => dispatch({ type: "pressCommit", remember: settings.oneSwitch }),
     onCancel: () => dispatch({ type: "cancel" }),
   });
 
@@ -145,7 +145,7 @@ export function Calibration({ request }: { request: (view: ViewId) => void }) {
         )}
         <p className="hint">
           {settings.oneSwitch
-            ? "Keyboard: Space is both presses. Hold it to say it. Escape lets go. Arrows move the picture."
+            ? "Keyboard: Space is both presses. A second press during the short wait still counts. Hold Space to say it. Escape lets go. Arrows move the picture. The other gamepad button stays quiet."
             : "Keyboard: Space is light, Enter is deep, Escape lets go. Arrows move the picture."}
         </p>
       </section>

@@ -82,7 +82,11 @@ export function TwoChoice({
     gamepadInButton: library.settings.gamepadInButton,
     gamepadCommitButton: library.settings.gamepadCommitButton,
     onIn: () => dispatch({ type: "pressIn" }),
-    onCommit: () => dispatch({ type: "pressCommit", effect: effectFor(state.side === null ? undefined : pair[state.side]) }),
+    onCommit: () => dispatch({
+      type: "pressCommit",
+      effect: effectFor(state.side === null ? undefined : pair[state.side]),
+      remember: library.settings.oneSwitch,
+    }),
     onCancel: () => dispatch({ type: "cancel" }),
     onNext: () => dispatch({ type: "next" }),
     onPrev: () => dispatch({ type: "prev" }),

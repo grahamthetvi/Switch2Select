@@ -170,6 +170,9 @@ export function PartnerBar({
               <button type="button" className="button" onClick={() => onRequest("guide")}>
                 Guide
               </button>
+              <button type="button" className="button" onClick={() => onRequest("welcome")}>
+                Welcome
+              </button>
               <button type="button" className="button" onClick={onFullscreen}>
                 Full screen
               </button>

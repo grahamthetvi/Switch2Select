@@ -32,7 +32,7 @@ export function Guide({ request }: { request: (view: ViewId) => void }) {
       </section>
       <section className="panel">
         <h2>A one switch</h2>
-        <p>Turn on One switch in Settings. Space, or one gamepad button, does both jobs. First press holds the picture. The same press again says it. Holding the switch also says it. Wait to let go. Nothing needs Enter.</p>
+        <p>Turn on One switch in Settings. Space, or one gamepad button, does both jobs. First press holds the picture. The same press again says it, even if it lands during the short wait. Holding the switch also says it. Letting go in two pictures keeps that picture for a full turn. Nothing needs Enter. A second gamepad button stays quiet.</p>
         <p>In two pictures, the offer moves by itself. Then the same two presses.</p>
       </section>
       <section className="panel">

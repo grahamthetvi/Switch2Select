@@ -35,3 +35,30 @@ export function parentOf(items: TreeNode[], id: string | null): string | null {
   if (!id) return null;
   return items.find((item) => item.id === id)?.parentId ?? null;
 }
+
+/** A place for a new picture: the top when it has room, otherwise a pair that is waiting for its second picture. */
+export function openParentId(items: TreeNode[], itemId: string): string | null {
+  if (canPlace(items, itemId, null) === null) return null;
+  const incomplete = items.find((item) => {
+    const count = items.filter((child) => child.parentId === item.id && child.id !== itemId).length;
+    return count === 1 && canPlace(items, itemId, item.id) === null;
+  });
+  return incomplete?.id ?? null;
+}
+
+/** Why this set of pictures cannot be a library. Null means the pairs, parents, and ids are usable. */
+export function libraryTreeError(items: TreeNode[]): string | null {
+  const ids = new Set<string>();
+  for (const item of items) {
+    if (ids.has(item.id)) return "That backup lists the same picture twice.";
+    ids.add(item.id);
+  }
+  for (const item of items) {
+    if (item.parentId !== null && !ids.has(item.parentId)) {
+      return "That backup points a picture at a missing parent.";
+    }
+    const reason = canPlace(items, item.id, item.parentId);
+    if (reason) return reason;
+  }
+  return null;
+}

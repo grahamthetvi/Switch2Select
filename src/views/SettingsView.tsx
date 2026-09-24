@@ -322,7 +322,7 @@ export function SettingsView({ request }: { request: (view: ViewId) => void }) {
         </label>
         <p className="hint">
           {settings.oneSwitch
-            ? "First press means this one. The same press again says it. Holding the switch also says it. Wait to let go. In two pictures, the offer takes turns by itself."
+            ? "First press means this one. The same press again says it, even during the short wait. Holding the switch also says it. Wait to let go. In two pictures, the offer takes turns by itself, and letting go keeps that picture for a full turn."
             : "Space or one button is a light press. Enter or a second button is a deep press. Turn this on if they only have one switch."}
         </p>
       </section>
@@ -353,6 +353,9 @@ export function SettingsView({ request }: { request: (view: ViewId) => void }) {
           </button>
           <button type="button" className="button" onClick={() => request("guide")}>
             Partner guide
+          </button>
+          <button type="button" className="button" onClick={() => request("welcome")}>
+            Welcome and privacy
           </button>
         </div>
       </section>

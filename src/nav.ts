@@ -1,4 +1,4 @@
-export type ViewId = "talk" | "two" | "library" | "settings" | "calibrate" | "guide";
+export type ViewId = "talk" | "two" | "library" | "settings" | "calibrate" | "guide" | "welcome";
 
 export function hashFor(view: ViewId): string {
   switch (view) {
@@ -14,6 +14,8 @@ export function hashFor(view: ViewId): string {
       return "#/calibrate";
     case "guide":
       return "#/guide";
+    case "welcome":
+      return "#/welcome";
     default: {
       const exhaustive: never = view;
       return exhaustive;
@@ -38,11 +40,14 @@ export function viewFromHash(hash: string): ViewId {
     case "#/guide":
     case "#/guide/":
       return "guide";
+    case "#/welcome":
+    case "#/welcome/":
+      return "welcome";
     default:
       return "talk";
   }
 }
 
 export function viewNeedsGate(view: ViewId): boolean {
-  return view !== "talk";
+  return view !== "talk" && view !== "welcome";
 }
