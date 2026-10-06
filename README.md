@@ -174,7 +174,7 @@ These paths are part of the project:
 
 `yes.svg` is a yellow circle on a black square. The Play page at `/games/look/index.html` shows a yellow shape on black. The shapes are a small circle, a square, and a large circle. The device sends a select when that page loads, which moves the shape from the small circle to the square. Selecting Play again loads the page from the start, so the square is what stays on screen.
 
-The sample `config.json` also points the Look option at `/media/pulse.mp4`. That video file is not in this project. Look stays blank until you add an MP4 at that path or change `src`. The firmware serves `.html`, `.css`, `.js`, `.json`, `.svg`, `.mp4`, `.wav`, `.png`, `.jpg`, and `.jpeg`.
+The sample `config.json` points the Look option at `/media/pulse.mp4`, which is included. The firmware serves `.html`, `.css`, `.js`, `.json`, `.svg`, `.mp4`, `.wav`, `.png`, `.jpg`, and `.jpeg`.
 
 The device reads `/config.json` once at startup. After you edit it, turn the rocker off and on. Use a plain text editor and keep the JSON valid, with exactly four objects in `options`. A file the firmware cannot parse is ignored in memory. The card copy is left as written. The in-memory fallback is auto scan, a 3 second step, a 1 second pulse length, volume 5, and the labels One, Two, Three, and Four, with toy pulses off.
 
@@ -202,7 +202,7 @@ The sample card is:
 | Numeral | Label | Type | On select | Toy pulse |
 | --- | --- | --- | --- | --- |
 | 1 | Yes | image | Yellow circle, speaks "Yes" | Yes |
-| 2 | Look | video | Plays `/media/pulse.mp4` if you add it, speaks "Look" | No |
+| 2 | Look | video | Plays `/media/pulse.mp4`, speaks "Look" | No |
 | 3 | Play | game | Yellow-shape game, speaks "Play" | No |
 | 4 | Help | tts | Shows and speaks "I need help" | Yes |
 
