@@ -15,5 +15,6 @@ void broadcastFocus(uint8_t index);
 void broadcastSelect(uint8_t index);
 void broadcastVolume(uint8_t level);
 void broadcastInteract(uint8_t index);
+void broadcastConfig();
 void webBegin();
 void webLoop();

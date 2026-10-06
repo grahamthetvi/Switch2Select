@@ -37,8 +37,8 @@ struct MimeType {
 
 static const MimeType kMimeTypes[] = {
     {".html", "text/html", true},
-    {".css", "text/css", false},
-    {".js", "text/javascript", false},
+    {".css", "text/css", true},
+    {".js", "text/javascript", true},
     {".json", "application/json", true},
     {".svg", "image/svg+xml", false},
     {".mp4", "video/mp4", false},
@@ -268,6 +268,119 @@ static void handleHttp() {
   serveFile(path, method);
 }
 
+static const size_t kMaxUploadBytes = 12 * 1024 * 1024;
+
+static File uploadFile;
+static bool uploadOpen = false;
+static bool uploadFailed = false;
+static size_t uploadBytes = 0;
+static char uploadPath[24];
+
+static bool mediaExtension(String extArg, char *extOut, size_t extOutSize) {
+  extArg.toLowerCase();
+  const char *ext = nullptr;
+  if (extArg == "png") {
+    ext = "png";
+  } else if (extArg == "jpg" || extArg == "jpeg") {
+    ext = "jpg";
+  } else if (extArg == "mp4") {
+    ext = "mp4";
+  } else {
+    return false;
+  }
+  snprintf(extOut, extOutSize, "%s", ext);
+  return true;
+}
+
+static void closeUpload() {
+  if (!uploadOpen) {
+    return;
+  }
+  uploadFile.close();
+  uploadOpen = false;
+}
+
+static void handleMediaUpload() {
+  HTTPUpload &upload = http.upload();
+  if (upload.status == UPLOAD_FILE_START) {
+    closeUpload();
+    uploadFailed = false;
+    uploadBytes = 0;
+    uploadPath[0] = '\0';
+    const String slotArg = http.arg("slot");
+    char ext[8];
+    if (slotArg.length() != 1 || slotArg[0] < '1' || slotArg[0] > '4' ||
+        !mediaExtension(http.arg("ext"), ext, sizeof(ext))) {
+      uploadFailed = true;
+      return;
+    }
+    snprintf(uploadPath, sizeof(uploadPath), "/media/%c.%s", slotArg[0], ext);
+    SD.mkdir("/media");
+    uploadFile = SD.open(uploadPath, FILE_WRITE);
+    if (!uploadFile) {
+      uploadFailed = true;
+      uploadPath[0] = '\0';
+      return;
+    }
+    uploadOpen = true;
+    return;
+  }
+
+  if (upload.status == UPLOAD_FILE_WRITE) {
+    if (uploadFailed || !uploadOpen) {
+      uploadFailed = true;
+      return;
+    }
+    if (upload.currentSize > kMaxUploadBytes || uploadBytes > kMaxUploadBytes - upload.currentSize) {
+      uploadFailed = true;
+      return;
+    }
+    const size_t wrote = uploadFile.write(upload.buf, upload.currentSize);
+    if (wrote != upload.currentSize) {
+      uploadFailed = true;
+      return;
+    }
+    uploadBytes += wrote;
+    yield();
+    return;
+  }
+
+  if (upload.status == UPLOAD_FILE_END || upload.status == UPLOAD_FILE_ABORTED) {
+    closeUpload();
+    if (upload.status == UPLOAD_FILE_ABORTED || uploadFailed || uploadBytes == 0) {
+      uploadFailed = true;
+      if (uploadPath[0] != '\0') {
+        SD.remove(uploadPath);
+      }
+      uploadPath[0] = '\0';
+    }
+  }
+}
+
+static void handleMediaDone() {
+  closeUpload();
+  if (uploadFailed || uploadPath[0] == '\0') {
+    http.send(400, "application/json", "{\"ok\":false}");
+    return;
+  }
+  char body[64];
+  snprintf(body, sizeof(body), "{\"ok\":true,\"src\":\"%s\"}", uploadPath);
+  http.send(200, "application/json", body);
+}
+
+static void handleConfigPost() {
+  if (!http.hasArg("plain")) {
+    http.send(400, "application/json", "{\"ok\":false}");
+    return;
+  }
+  const String body = http.arg("plain");
+  if (!storeConfigJson(body.c_str(), body.length())) {
+    http.send(400, "application/json", "{\"ok\":false}");
+    return;
+  }
+  http.send(200, "application/json", "{\"ok\":true}");
+}
+
 static void sendHello(uint8_t clientNum) {
   char message[64];
   snprintf(message, sizeof(message), "{\"type\":\"hello\",\"index\":%u,\"volume\":%u}",
@@ -316,6 +429,10 @@ void broadcastInteract(uint8_t index) {
   webSocket.broadcastTXT(message);
 }
 
+void broadcastConfig() {
+  webSocket.broadcastTXT("{\"type\":\"config\"}");
+}
+
 void webBegin() {
   Serial.begin(115200);
   WiFi.mode(WIFI_AP);
@@ -326,6 +443,8 @@ void webBegin() {
   webSocket.onEvent(onWebSocketEvent);
 
   http.collectHeaders(kCollectedHeaders, sizeof(kCollectedHeaders) / sizeof(kCollectedHeaders[0]));
+  http.on("/api/config", HTTP_POST, handleConfigPost);
+  http.on("/api/media", HTTP_POST, handleMediaDone, handleMediaUpload);
   http.onNotFound(handleHttp);
   http.begin();
 }

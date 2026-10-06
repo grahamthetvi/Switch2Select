@@ -25,6 +25,7 @@ extern void broadcastFocus(uint8_t index);
 extern void broadcastSelect(uint8_t index);
 extern void broadcastVolume(uint8_t level);
 extern void broadcastInteract(uint8_t index);
+extern void broadcastConfig();
 
 Settings settings;
 uint8_t focusIndex = 0;
@@ -523,17 +524,186 @@ void loadConfig() {
   readSettingsFromDoc();
 }
 
-void writeConfig() {
+bool writeConfig() {
   if (!sdReady) {
-    return;
+    return false;
   }
-  File file = SD.open(kConfigPath, FILE_WRITE);
+  const char *tempPath = "/config.tmp";
+  SD.remove(tempPath);
+  File file = SD.open(tempPath, FILE_WRITE);
   if (!file) {
-    return;
+    return false;
   }
-  serializeJson(configDoc, file);
+  const size_t written = serializeJson(configDoc, file);
   file.flush();
   file.close();
+  if (written == 0) {
+    SD.remove(tempPath);
+    return false;
+  }
+  SD.remove("/config.bak");
+  SD.rename(kConfigPath, "/config.bak");
+  if (!SD.rename(tempPath, kConfigPath)) {
+    SD.rename("/config.bak", kConfigPath);
+    SD.remove(tempPath);
+    return false;
+  }
+  SD.remove("/config.bak");
+  return true;
+}
+
+bool looksLikeColor(const char *text) {
+  if (text == nullptr || text[0] != '#' || strlen(text) != 7) {
+    return false;
+  }
+  for (uint8_t i = 1; i < 7; i++) {
+    if (hexNibble(text[i]) < 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool knownChoiceType(const char *type) {
+  return type != nullptr && (strcmp(type, "image") == 0 || strcmp(type, "video") == 0 ||
+                             strcmp(type, "game") == 0 || strcmp(type, "tts") == 0);
+}
+
+bool acceptablePath(const char *text) {
+  if (text == nullptr || text[0] == '\0') {
+    return true;
+  }
+  if (text[0] != '/') {
+    return false;
+  }
+  if (strstr(text, "..") != nullptr) {
+    return false;
+  }
+  const size_t length = strlen(text);
+  if (length > 63) {
+    return false;
+  }
+  for (size_t i = 0; i < length; i++) {
+    const unsigned char c = static_cast<unsigned char>(text[i]);
+    if (c < 0x20 || c == '\\' || c == ' ') {
+      return false;
+    }
+  }
+  return true;
+}
+
+long clampRange(long value, long minValue, long maxValue) {
+  if (value < minValue) {
+    return minValue;
+  }
+  if (value > maxValue) {
+    return maxValue;
+  }
+  return value;
+}
+
+void clampText(JsonObject object, const char *key, size_t maxChars, const char *fallback) {
+  char buf[96];
+  const char *text = fallback == nullptr ? "" : fallback;
+  const JsonVariant value = object[key];
+  if (value.is<const char *>()) {
+    const char *parsed = value.as<const char *>();
+    if (parsed != nullptr) {
+      text = parsed;
+    }
+  }
+  size_t n = 0;
+  while (text[n] != '\0' && n < maxChars && n + 1 < sizeof(buf)) {
+    buf[n] = text[n];
+    n++;
+  }
+  buf[n] = '\0';
+  object[key] = buf;
+}
+
+void clampColor(JsonObject object, const char *key, const char *fallback) {
+  const char *text = nullptr;
+  if (object[key].is<const char *>()) {
+    text = object[key].as<const char *>();
+  }
+  if (!looksLikeColor(text)) {
+    text = fallback;
+  }
+  char buf[8];
+  for (uint8_t i = 0; i < 7; i++) {
+    char c = text[i];
+    if (c >= 'A' && c <= 'F') {
+      c = static_cast<char>(c - 'A' + 'a');
+    }
+    buf[i] = c;
+  }
+  buf[7] = '\0';
+  object[key] = buf;
+}
+
+bool normalizeConfigDoc() {
+  bool step = false;
+  if (configDoc["scanMode"].is<const char *>()) {
+    const char *mode = configDoc["scanMode"].as<const char *>();
+    step = mode != nullptr && strcmp(mode, "step") == 0;
+  }
+  configDoc["scanMode"] = step ? "step" : "auto";
+
+  long delayMs = configDoc["scanDelayMs"] | static_cast<long>(kDefaultScanDelayMs);
+  if (delayMs == 0) {
+    delayMs = static_cast<long>(kDefaultScanDelayMs);
+  }
+  configDoc["scanDelayMs"] = clampRange(delayMs, 500, 120000);
+
+  long pulseMs = configDoc["outputPulseMs"] | static_cast<long>(kDefaultPulseMs);
+  if (pulseMs < 0) {
+    pulseMs = static_cast<long>(kDefaultPulseMs);
+  }
+  configDoc["outputPulseMs"] = clampRange(pulseMs, 100, 30000);
+
+  configDoc["volume"] = static_cast<int>(clampRange(configDoc["volume"] | static_cast<long>(kDefaultVolume), 0, 9));
+  configDoc["ringLevel"] =
+      static_cast<int>(clampRange(configDoc["ringLevel"] | static_cast<long>(kDefaultRingLevel), 0, 9));
+
+  JsonArray options = configDoc["options"].as<JsonArray>();
+  for (uint8_t i = 0; i < kOptionCount; i++) {
+    if (!options[i].is<JsonObject>()) {
+      options[i].to<JsonObject>();
+    }
+    JsonObject object = options[i].as<JsonObject>();
+    clampText(object, "label", 47, kDefaultLabels[i]);
+    const char *label = object["label"].as<const char *>();
+    if (label == nullptr || label[0] == '\0') {
+      object["label"] = kDefaultLabels[i];
+    }
+    clampText(object, "phrase", 95, "");
+    char typeBuf[12];
+    const char *typeText = "tts";
+    if (object["type"].is<const char *>()) {
+      const char *parsed = object["type"].as<const char *>();
+      if (knownChoiceType(parsed)) {
+        typeText = parsed;
+      }
+    }
+    setText(typeBuf, sizeof(typeBuf), typeText);
+    object["type"] = typeBuf;
+    char pathBuf[64];
+    pathBuf[0] = '\0';
+    if (object["src"].is<const char *>()) {
+      const char *parsed = object["src"].as<const char *>();
+      if (parsed != nullptr && acceptablePath(parsed)) {
+        setText(pathBuf, sizeof(pathBuf), parsed);
+      }
+    }
+    object["src"] = pathBuf;
+    clampColor(object, "background", "#000000");
+    clampColor(object, "color", "#ffff00");
+    object["pulseOutput"] = readFlag(object["pulseOutput"], false);
+    if (configDoc.overflowed()) {
+      return false;
+    }
+  }
+  return !configDoc.overflowed();
 }
 
 void changeVolume(int8_t delta) {
@@ -606,6 +776,51 @@ void handleInputs() {
 }
 
 }  // namespace
+
+bool storeConfigJson(const char *json, size_t length) {
+  if (!sdReady || json == nullptr || length == 0 || length >= kConfigCapacity) {
+    return false;
+  }
+  static char backup[kConfigCapacity];
+  const size_t backupLen = serializeJson(configDoc, backup, sizeof(backup));
+  if (backupLen == 0 || backupLen >= sizeof(backup) - 1) {
+    return false;
+  }
+
+  auto restore = [&]() {
+    const DeserializationError restored = deserializeJson(configDoc, backup, backupLen);
+    if (restored || configDoc.overflowed() || !configDoc.is<JsonObject>()) {
+      applyDefaults();
+    }
+  };
+
+  const DeserializationError error = deserializeJson(configDoc, json, length);
+  if (error || configDoc.overflowed() || !configDoc.is<JsonObject>() || !configDoc["options"].is<JsonArray>() ||
+      configDoc["options"].size() != kOptionCount) {
+    restore();
+    return false;
+  }
+  if (!normalizeConfigDoc()) {
+    restore();
+    return false;
+  }
+  if (!writeConfig()) {
+    restore();
+    return false;
+  }
+  readSettingsFromDoc();
+  if (speechReady) {
+    ss.setVolume(settings.volume);
+  }
+  driveRings();
+  if (autoScanEnabled()) {
+    armScanTimer();
+  } else {
+    scanTimerArmed = false;
+  }
+  broadcastConfig();
+  return true;
+}
 
 void deviceBegin() {
   holdRelaysOff();

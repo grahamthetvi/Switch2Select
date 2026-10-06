@@ -40,4 +40,8 @@ extern uint8_t focusIndex;
 void deviceBegin();
 void deviceLoop();
 
+// Replace /config.json from the setup page and apply it while the device stays on.
+// Returns false when the card is missing or the JSON is not four choices.
+bool storeConfigJson(const char *json, size_t length);
+
 #endif
