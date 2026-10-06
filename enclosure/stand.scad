@@ -385,7 +385,7 @@ module ipad_ghost() {
 module cards_ghost() {
   origin = 100 - card_panel_w() / 2;
   plate_place()
-    translate([origin, 0, 0.3])
+    translate([origin, floor_y + 0.4, 0.3])
       rotate([180, 0, 0])
         translate([0, -panel_h, -panel_z])
           union() {

@@ -4,7 +4,7 @@ Switch2Select is a four-option switch device for students with cortical visual i
 
 An ESP32 DevKit runs an open Wi-Fi access point named Switch2Select and serves the page from a microSD card. A DFRobot Gravity Speech Synthesis Module V2.0 (DFR0760) speaks when no browser page is connected to the device. Two buttons change the volume. A third button, the same size, talks to the screen and repeats which port is in use. A DaierTek 20 mm round SPST rocker switches the USB +5 V lead from a power bank or a 5 V adapter. There is no custom circuit board. Connections are soldered or joined with WAGO 221 connectors.
 
-A rail on the lid holds an iPad, or four 3 by 5 inch cards stood up in place of the iPad. The rail leans 18 degrees back from vertical. There is no lamp above the input jacks. Those lamps would point at the student. The active port is spoken, and the light sits behind the card.
+A stand on the lid holds an iPad in landscape. The full stand leans 18 degrees back from vertical, and it can hold four 3 by 5 inch cards stood up in place of the iPad. The simple stand leans 8 degrees and holds the iPad. There is no lamp above the input jacks. Those lamps would point at the student. The active port is spoken, and the light sits behind the card.
 
 Build in the order below. Flash the board before you close the box. Keep the power source unplugged until the wiring section is finished.
 
@@ -38,13 +38,10 @@ Build in the order below. Flash the board before you close the box. Keep the pow
 - Four small zip ties, or a dot of hot glue, to keep the rings in their pockets
 - PLA or PETG
 - Four M3 screws, about 8 mm to 12 mm long, for the lid
-- Four M3×20 mm screws and four M3 nuts, to bolt the stand through the lid
-- Four M3×10 mm screws, for the two rail extensions
-- Two M3×10 mm screws, for the sliding side rails
-- Two M3×12 mm screws and two M3 nuts, to join the card halves
-- Two M3×12 mm screws and two M3 nuts, for the rear feet
+- For the full stand: four M3×20 mm screws and four M3 nuts, to bolt the cap and the plate through the lid; four M3×6 mm screws, for the two rail extensions; two M3×10 mm screws, for the sliding side rails; two M3×12 mm screws and two M3 nuts, to join the card halves; two M3×12 mm screws and two M3 nuts, for the rear feet
+- For the simple stand: four M3×10 mm screws and four M3 nuts, to bolt the cradle through the lid; two M3×6 mm screws, for the side stops
 
-The enclosure corners are drilled for the lid screws. The lid holes are 3.4 mm clearance. Each bottom boss has a 2.8 mm pilot, 10 mm deep. The stand's extension screws and rail screws form their own threads in 2.8 mm pilots. The other new screws use the nuts.
+The enclosure corners are drilled for the lid screws. The lid holes are 3.4 mm clearance. Each bottom boss has a 2.8 mm pilot, 10 mm deep. On the full stand, the extension screws and the rail screws form their own threads in 2.8 mm pilots. On the simple stand, each side-stop screw forms its own thread in the stop and presses on the lip. The screws that bolt a stand through the lid use nuts on the underside of the lid.
 
 ## Print the enclosure
 
@@ -76,20 +73,26 @@ The enclosure, the stand, and the wiring are CERN-OHL-W v2. If you share a modif
 
 ## Print the stand
 
-The stand sits on the lid. The student looks at the screen or the cards. The partner wall stays open, so the toy plugs, the buttons, the rocker, the USB lead, and the microSD card are still reachable. Two feet drop to the table at the rear corners, clear of those plugs, so a 13 inch iPad does not tip the box.
+The lid has four 3.4 mm holes in a row behind the speaker grill. The full stand and the simple stand both bolt through those holes. Print one stand. The student looks at the screen, or at the cards on the full stand. The partner wall stays open, so the toy plugs, the buttons, the rocker, the USB lead, and the microSD card are still reachable.
+
+### Full stand
+
+The full stand leans 18 degrees back from vertical. It holds an iPad or four cards. Two feet drop to the table at the rear corners, clear of the partner-wall plugs.
 
 Print:
 
 - `enclosure/stand-cap.stl`, one. The word FRONT is the student edge. The ring pockets are not on this part. Lay it flat, text up.
-- `enclosure/stand-plate.stl`, one. Lay the flat foot on the bed. The back rises from it. The part is about 175 mm tall, so the printer needs that much vertical room.
-- `enclosure/stand-extension-left.stl` and `enclosure/stand-extension-right.stl`, one each. Same orientation as the plate. Each is about 138 mm wide and 175 mm tall.
+- `enclosure/stand-plate.stl`, one. Lay the flat foot on the bed. The back rises from it. The part is about 175 mm tall, so the printer needs that much vertical room. The ledge sticks out at about 18 degrees above the bed. Turn supports on under the ledge.
+- `enclosure/stand-extension-left.stl` and `enclosure/stand-extension-right.stl`, one each. Same orientation as the plate, with supports under the ledge. Each is about 138 mm wide and 175 mm tall.
 - `enclosure/stand-rail.stl`, two. Print one as exported and mirror the other in the slicer. The slot faces up. The small fin is the side that meets the iPad or the card panel. After mirroring, the two fins face each other.
 - `enclosure/stand-cards-left.stl` and `enclosure/stand-cards-right.stl`, one each, only if you want the cards. Lay them with the round pockets up. Numerals 1 and 2 are on the left half. Numerals 3 and 4 are on the right half. Each half is about 183 mm by 151 mm.
 - `enclosure/stand-foot.stl`, two. Lay it on the broad face. The screw hole is the short tunnel through the tab.
 
+The cap, the rails, the card halves, and the feet print without supports.
+
 Those files were exported from `enclosure/stand.scad`. Set `part` to `cap`, `plate`, `extension-left`, `extension-right`, `rail`, `cards-left`, `cards-right`, or `foot`. The value `assembly` draws the stand on the box, with a sample iPad and the card panel in the same ledge so you can see that both fit. You use one or the other, not both at once.
 
-The ledge is 12 mm deep, so a bare iPad from 5.1 mm to 7.5 mm thick sits in it, and so does the card panel. A case has to be thinner than 11 mm. The iPad leans on the back. The lip at the bottom keeps it from sliding toward the student. The side rails set the width. Ticks on the ledge read `mini`, `10`, `13`, and `card`. Snug the rails to the real device. The `10` tick is the 10.2 inch iPad (7th, 8th, and 9th generation). The 10.9 inch and 11 inch Air and Pro models are within 3 mm of that tick.
+The ledge is 12 mm deep, so a bare iPad from 5.1 mm to 7.5 mm thick sits in it, and so does the card panel. A case has to be thinner than 11 mm. The iPad leans on the back. The shelf at the bottom of the slope keeps it from sliding toward the student. A low wall stands at the front of that 12 mm channel. The side rails set the width. Ticks on the ledge read `mini`, `10`, `13`, and `card`. Snug the rails to the real device. The `10` tick is the 10.2 inch iPad (7th, 8th, and 9th generation). The 10.9 inch and 11 inch Air and Pro models are within 3 mm of that tick.
 
 Landscape widths, long edge on the ledge:
 
@@ -104,15 +107,36 @@ Landscape widths, long edge on the ledge:
 | iPad Air 13 inch and iPad Pro 12.9 inch | 280.6 mm | 214.9 mm | 5.9 mm to 6.4 mm |
 | iPad Pro 13 inch M4 | 281.6 mm | 215.5 mm | 5.1 mm |
 
-Portrait works too. Slide the rails in until they touch the sides. The center plate alone is 200 mm wide, which covers an iPad mini in landscape. Every larger iPad needs the two extensions. The card panel is 349 mm wide, so it needs the extensions too.
+Portrait works too. Slide the rails in until they touch the sides. The center plate alone is 200 mm wide, which covers an iPad mini in landscape. The side rails still need the two extensions under them, because the rail is wider than the spare ledge at the end of the center plate. Every larger iPad needs the extensions for the ledge as well. The card panel is 349 mm wide, so it needs the extensions too.
 
 The cards are 3 inch by 5 inch (76.2 mm by 127 mm), stood up, four across. The slot is 1.6 mm wider and 1.8 mm deep, so a laminated card slides in from the top. To use a different card, change `card_w` and `card_h` at the top of `enclosure/stand.scad` and export the two card halves again.
 
 Behind each card is a round seat 23.8 mm across and 2.4 mm deep, open on the back, with a 10 mm hole through to the card. That is the pocket for a 23 mm WS2812B ring. The 10 mm hole is smaller than the ring, so the ring cannot fall toward the student. Two 2.6 mm holes beside the seat take a zip tie across the back of the ring. A trench on the back carries the wires to the notch in the plate, then through the port in the cap and the lid.
 
-Bolt the extensions to the plate with the four M3×10 screws. The thin lap on each extension sits in the recess at the end of the plate foot. Bolt the cap and the plate foot to the lid with the four M3×20 screws and nuts. The nuts are on the underside of the lid, so do this before you screw the lid onto the box, or take the lid off to reach them. The four holes are in a row behind the speaker grill. The word FRONT on the cap points at the student. Bolt a foot to each rear tab of the cap. The leg reaches the table.
+Bolt the extensions to the plate with the four M3×6 screws. The thin lap on each extension sits in the recess at the end of the plate foot. The hole under the lap is about 7 mm deep and ends inside the foot, and an M3×6 screw draws the lap down. Bolt the cap and the plate foot to the lid with the four M3×20 screws and nuts. The nuts are on the underside of the lid, so do this before you screw the lid onto the box, or take the lid off to reach them. The four holes are in a row behind the speaker grill. The word FRONT on the cap points at the student. Bolt a foot to each rear tab of the cap. The leg reaches the table, 176 mm from the student edge. Fit both feet. The center of a 10.2 inch iPad sits about 5 mm behind the box, and the center of a 13 inch iPad sits about 13 mm behind the box. The feet carry that weight.
 
-Slide a side rail onto each end of the ledge and tighten its screw until the rail stays put. For an iPad, set the rails to the width and sit the iPad on the ledge, long edge down, screen toward the student. For cards, screw the two halves together with the two M3×12 screws and nuts. The nuts sit in the hex pockets on the back of the half marked 1 and 2. Press each ring into a pocket from the back, LEDs toward the card, and tie or glue it. Seat the panel in the ledge and bring the rails in against its sides. The cable drops through the port. Tie it to the bar on the floor of the box.
+Slide a side rail onto each end of the ledge, with the extensions already bolted on, and tighten its screw until the rail stays put. For an iPad, set the rails to the width and sit the iPad on the ledge, long edge down, screen toward the student. For cards, screw the two halves together with the two M3×12 screws and nuts. The nuts sit in the hex pockets on the back of the half marked 1 and 2. Press each ring into a pocket from the back, LEDs toward the card, and tie or glue it. Seat the panel in the ledge and bring the rails in against its sides. The cable drops through the port. Tie it to the bar on the floor of the box.
+
+### Simple stand
+
+The simple stand is one cradle and two side stops. The back leans 8 degrees from vertical. A bare iPad sits on the shelf and rests against that back. The lip on the student side of the shelf is 8 mm tall and 2.4 mm thick. The open gap from the lip to the back is 13.5 mm, so an iPad from 5.1 mm to 7.5 mm thick can lean fully back. The lip stops the bottom edge if the iPad slides toward the student. The lip starts about 1 mm behind the speaker grill, so the grill stays clear.
+
+Eight degrees is a small lean, and it holds the iPad against the back. The center of a 13 inch iPad (215.5 mm tall and 5.1 mm thick) lands about 24 mm in front of the rear edge of the box. The cradle carries that iPad on the lid. The back is 160 mm along the slope, which covers an iPad mini. The top of a 10 inch or 13 inch iPad stands above the back and still leans on it.
+
+Print:
+
+- `enclosure/stand-simple.stl`, one. Lay the flat base on the bed. The lip and the back rise from it. The part is about 165 mm tall. It prints in PLA or PETG without supports.
+- `enclosure/stand-simple-stop.stl`, two. Lay each one as exported. The slot faces up and the flat cap is on the bed. The fin is the short upright at one end. The part is about 74 mm long and 12 mm tall. Mirror the second stop left to right in the slicer, so the fins face each other and both screw bosses stay on the student side of the lip.
+
+Those files were exported from `enclosure/stand-simple.scad`. Set `part` to `cradle` or `stop`. The value `assembly` draws the cradle and the stops on the box with a 13 inch iPad.
+
+The cradle is 200 mm wide. An iPad mini in landscape (195.4 mm) sits on it with the stops near the ends. Each stop reaches about 45 mm past the box, which covers the wider models through a 13 inch iPad (281.6 mm). The widths are in the table above. Slide each stop on from the end of the lip until the fin meets the iPad.
+
+Bolt the cradle to the lid with four M3×10 screws and nuts. Use a socket head or a pan head, about 5.5 mm to 5.6 mm across, so the head sits in the counterbore. Each counterbore is 6.2 mm across and 3.2 mm deep. The nuts are on the underside of the lid, so do this before you screw the lid onto the box, or take the lid off to reach them. The lip faces the student. The cable port stays open through the shelf.
+
+Set the iPad on the shelf, long edge down, screen toward the student. It leans on the back. Bring each stop in until the fin touches the side. The M3×6 screw goes through the boss on the student side of the stop and presses the face of the lip. Tighten it until the stop stays put.
+
+The card panel, the ring pockets, and the rear feet belong to the full stand.
 
 ## Flash the firmware
 
@@ -309,7 +333,7 @@ Do not use GPIO 0, 2, 12, 25, or 26. Do not land a toy jack, a relay contact, or
 3. Push the four toy jacks into the partner-wall holes the same way, each beside its matching numeral, and wrap those leads on the stems beyond the cord holes. Seat each of the three buttons in its hole so it meets the 9 mm square backing. Mount the 20 mm rocker in the lower row. Leave the space behind the rocker clear for the switch body and its two terminals.
 4. Route the USB power cable out through the 12 mm by 8 mm slot.
 5. Place the microSD socket behind the 16 mm by 3 mm slot.
-6. Place the DFR0760 speaker on the inside of the lid, facing the grill. If you are fitting the stand, bolt the cap and the plate to the lid before this lid goes back on the box. The ring cable comes through the 12 mm by 10 mm port and ties to the bar on the floor.
+6. Place the DFR0760 speaker on the inside of the lid, facing the grill. Bolt the stand to the lid before this lid goes back on the box, so you can reach the nuts. On the full stand, that is the cap and the plate with the four M3×20 screws. On the simple stand, that is the cradle with the four M3×10 screws, heads in the counterbores. The ring cable comes through the 12 mm by 10 mm port and ties to the bar on the floor. The simple cradle leaves that port open.
 7. Label the outside of the student wall **Inputs** and the outside of the partner wall **Toys**. The raised numerals show which channel is which. The written labels are there so the two jack types are not swapped later.
 8. Insert the FAT32 card.
 9. Set the lid on the rim and fasten the four M3 screws through the lid into the corner bosses. The stand, if you bolted it to the lid, comes with the lid.
