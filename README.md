@@ -193,6 +193,10 @@ These paths are part of the project:
 - `/www/style.css`
 - `/www/app.js`
 - `/www/switch2select.js`
+- `/www/edit.html`
+- `/www/edit.css`
+- `/www/edit.js`
+- `/www/isolate.js`
 - `/media/yes.svg`
 - `/games/look/index.html`
 
@@ -200,15 +204,15 @@ These paths are part of the project:
 
 The sample `config.json` points the Look option at `/media/pulse.mp4`, which is included. The firmware serves `.html`, `.css`, `.js`, `.json`, `.svg`, `.mp4`, `.wav`, `.png`, `.jpg`, and `.jpeg`.
 
-The device reads `/config.json` once at startup. After you edit it, turn the rocker off and on. Use a plain text editor and keep the JSON valid, with exactly four objects in `options`. A file the firmware cannot parse is ignored in memory. The card copy is left as written. The in-memory fallback is auto scan, a 3 second step, a 1 second pulse length, volume 5, and the labels One, Two, Three, and Four, with toy pulses off.
+The device reads `/config.json` at startup. The setup page can write that file and apply it while the device stays on. After you edit the file on a computer, turn the rocker off and on. Use a plain text editor and keep the JSON valid, with exactly four objects in `options`. A file the firmware cannot parse is ignored in memory. The card copy is left as written. The in-memory fallback is auto scan, a 3 second step, a 1 second pulse length, volume 5, and the labels One, Two, Three, and Four, with toy pulses off.
 
 Fields:
 
 - `scanMode` is `"auto"` or `"step"`. Any value other than `"step"` is treated as auto. Auto is the sample and the fallback.
 - `scanDelayMs` is how long, in milliseconds, the highlight stays on one option during auto scan. A missing or zero value becomes 3000.
 - `outputPulseMs` is how long, in milliseconds, a toy contact stays closed. A missing value becomes 1000. The sample uses 1000, about one second.
-- `volume` is an integer from 0 to 9. The sample uses 5. The volume buttons update this field on the card when the card is mounted. Values below 0 or above 9 are clamped.
-- `ringLevel` is an integer from 0 to 9. The sample uses 4. It sets how bright the card ring is. 0 leaves the rings off. The device button does not change it. Edit the file and power-cycle to change it. A missing value becomes 4.
+- `volume` is an integer from 0 to 9. The sample uses 5. The volume buttons and the setup page update this field on the card when the card is mounted. Values below 0 or above 9 are clamped.
+- `ringLevel` is an integer from 0 to 9. The sample uses 4. It sets how bright the card ring is. 0 leaves the rings off. The device button does not change it. The setup page changes it. A file edit is used after the rocker is turned off and on. A missing value becomes 4.
 - `options` is four entries. Index 0 is numeral 1.
 
 Each option:
@@ -367,6 +371,12 @@ If the module never speaks with the page closed, check that its switch is on UAR
 ## Using the device
 
 A partner prepares the card and the toy leads. A student uses the five switches on the input wall.
+
+The partner changes the four choices on the setup page. On the student screen, tap Setup in the top corner, or open `http://192.168.4.1/www/edit.html`. A phone that has joined Switch2Select can open that address and leave the student screen in place. Save writes the card, and the device uses the new settings while it stays on. The sketch has to be the one that accepts that save. Flash it, and copy the `www` files onto the card, before you rely on the page.
+
+The page edits scan mode, the time on each choice, how long a toy stays on, volume, card-light brightness, and each choice. A picture can be taken or chosen on the iPad. Remove background lifts the subject off a plain background, such as paper or a table, and can draw an outline in a chosen color. That work runs in the browser. The device Wi-Fi does not reach the internet, so bring a photo with a plain background when you can. Videos need to be short MP4 files. Photos and videos from the page are stored as `/media/1.png` and `/media/1.mp4`, and the same pattern for choices 2, 3, and 4. A game stays a page already on the card, such as `/games/look/index.html`.
+
+Editing `config.json` on a computer still works. Copy the card back, then turn the rocker off and on. Volume buttons still write the volume into the file while the device is on.
 
 There are four options, numbered 1 to 4. Speech names the port that is highlighted, and the ring behind that card is the only one lit. One target fills the screen. Nothing on the input wall points a lamp at the student.
 

@@ -21,6 +21,8 @@
   var socketRetry = 0;
   var speakToken = 0;
   var viewToken = 0;
+  var mediaEpoch = Date.now();
+  var showingChoice = false;
   var portWords = ["one", "two", "three", "four"];
 
   function demoConfig() {
@@ -96,7 +98,7 @@
     };
   }
 
-  function loadConfig() {
+  function loadConfig(keepOnError) {
     return fetch("/config.json", { cache: "no-store" })
       .then(function (response) {
         if (!response.ok) throw new Error("missing config");
@@ -108,8 +110,15 @@
         return normalized;
       })
       .catch(function () {
+        if (keepOnError && config) return config;
         return demoConfig();
       });
+  }
+
+  function mediaSrc(src) {
+    if (!src) return "";
+    var join = src.indexOf("?") >= 0 ? "&" : "?";
+    return src + join + "v=" + mediaEpoch;
   }
 
   function mediaVolume() {
@@ -166,7 +175,7 @@
     target.hidden = true;
     target.textContent = "";
     var img = document.createElement("img");
-    img.src = item.src;
+    img.src = mediaSrc(item.src);
     img.alt = item.label || "";
     img.draggable = false;
     visual.appendChild(img);
@@ -177,7 +186,7 @@
     target.hidden = true;
     target.textContent = "";
     var video = document.createElement("video");
-    video.src = item.src;
+    video.src = mediaSrc(item.src);
     video.autoplay = true;
     video.playsInline = true;
     video.controls = false;
@@ -199,7 +208,7 @@
     target.hidden = true;
     target.textContent = "";
     var iframe = document.createElement("iframe");
-    iframe.src = item.src;
+    iframe.src = mediaSrc(item.src);
     iframe.title = item.label || "Activity";
     iframe.setAttribute("frameborder", "0");
     iframe.addEventListener("load", function () {
@@ -265,19 +274,20 @@
     return item;
   }
 
-  function showFocus(index) {
+  function showFocus(index, silent) {
     currentIndex = index;
     viewToken += 1;
     var token = viewToken;
     var leavingGame = relay("focus", index);
     afterGameMessage(leavingGame, function () {
       if (token !== viewToken) return;
+      showingChoice = false;
       renderFocus(index);
-      speak(portCue(index));
+      if (!silent) speak(portCue(index));
     });
   }
 
-  function activate(index) {
+  function activate(index, silent) {
     var item = config.options[index];
     currentIndex = index;
     viewToken += 1;
@@ -286,11 +296,13 @@
     var leavingGame = !openingGame && relay("select", index);
     afterGameMessage(leavingGame, function () {
       if (token !== viewToken) return;
+      showingChoice = true;
       applyColors(item);
       if (openingGame) showGame(item, index);
       else if (item.type === "image" && item.src) showImage(item);
       else if (item.type === "video" && item.src) showVideo(item);
       else showText(item.type === "tts" ? item.phrase || item.label : item.label);
+      if (silent) return;
       if (item.type === "tts") speak(item.phrase || item.label);
       else speak(item.label);
     });
@@ -377,6 +389,18 @@
         renderFocus(interactIndex);
       }
       performDeviceInteract();
+      return;
+    }
+    if (message.type === "config") {
+      mediaEpoch = Date.now();
+      loadConfig(true).then(function (loaded) {
+        if (!loaded) return;
+        config = loaded;
+        volumeLevel = loaded.volume;
+        applyVideoVolume();
+        if (showingChoice) activate(currentIndex, true);
+        else showFocus(currentIndex, true);
+      });
     }
   }
 
@@ -482,7 +506,7 @@
   demo.addEventListener("click", onDemoClick);
   document.addEventListener("keydown", onDemoKey);
 
-  loadConfig().then(function (loaded) {
+  loadConfig(false).then(function (loaded) {
     config = loaded;
     volumeLevel = loaded.volume;
     renderFocus(0);

@@ -116,3 +116,29 @@ body.demo #stage {
   padding: 2px 6px;
   font: inherit;
 }
+
+#setup {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 6;
+  box-sizing: border-box;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.85rem;
+  color: #6a6a6a;
+  background: transparent;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  text-transform: none;
+  text-shadow: none;
+}
+
+#setup:focus {
+  outline: 2px solid #888888;
+}
