@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Look</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #000000;
+      overflow: hidden;
+    }
+
+    #target {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      background: #ffff00;
+      transform: translate(-50%, -50%);
+    }
+
+    #target.circle-small {
+      width: 42vmin;
+      height: 42vmin;
+      border-radius: 50%;
+    }
+
+    #target.square {
+      width: 70vmin;
+      height: 70vmin;
+      border-radius: 0;
+    }
+
+    #target.circle-large {
+      width: 90vmin;
+      height: 90vmin;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body>
+  <div id="target" class="circle-small"></div>
+  <script src="/www/switch2select.js"></script>
+  <script>
+    (function () {
+      var target = document.getElementById("target");
+      var shapes = ["circle-small", "square", "circle-large"];
+      var step = 0;
+
+      function showShape() {
+        target.className = shapes[step % shapes.length];
+      }
+
+      function onSelect() {
+        step += 1;
+        showShape();
+      }
+
+      if (window.Switch2Select) {
+        window.Switch2Select.onSelect(onSelect);
+        window.Switch2Select.onInteract(onSelect);
+      }
+    })();
+  </script>
+</body>
+</html>

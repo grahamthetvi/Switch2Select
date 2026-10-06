@@ -1,0 +1,45 @@
+{
+  "scanMode": "auto",
+  "scanDelayMs": 3000,
+  "outputPulseMs": 1000,
+  "volume": 5,
+  "ringLevel": 4,
+  "options": [
+    {
+      "label": "Yes",
+      "phrase": "Yes",
+      "type": "image",
+      "src": "/media/yes.svg",
+      "background": "#000000",
+      "color": "#ffff00",
+      "pulseOutput": true
+    },
+    {
+      "label": "Look",
+      "phrase": "Look",
+      "type": "video",
+      "src": "/media/pulse.mp4",
+      "background": "#000000",
+      "color": "#ff0000",
+      "pulseOutput": false
+    },
+    {
+      "label": "Play",
+      "phrase": "Play",
+      "type": "game",
+      "src": "/games/look/index.html",
+      "background": "#000000",
+      "color": "#ffff00",
+      "pulseOutput": false
+    },
+    {
+      "label": "Help",
+      "phrase": "I need help",
+      "type": "tts",
+      "src": "",
+      "background": "#000000",
+      "color": "#ffff00",
+      "pulseOutput": true
+    }
+  ]
+}
