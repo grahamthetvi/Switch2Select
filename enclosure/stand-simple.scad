@@ -25,6 +25,9 @@
 // (281.6 mm wide) can be snugged up. An M3×6 screw through the boss presses
 // the student face of the lip and keeps the stop from sliding.
 //
+// The back plate is 6 mm thick. A brace fills in behind it, out to the rear
+// edge of the shelf, so the back is solid where it joins the base.
+//
 // Print the cradle with the base on the bed. The back rises about 8 degrees
 // off vertical, and the lip is a vertical wall, so it does not need supports.
 // Print each stop as exported: the flat cap is on the bed and the slot faces up.
@@ -39,7 +42,7 @@ box_z = 55;
 lid_t = 2.4;
 
 base_t = 6.5;
-back_t = 4;
+back_t = 6;
 back_len = 160;
 base_y1 = 120;
 
@@ -92,11 +95,29 @@ y_lip_student = y_lip_partner + lip_t;
 function com_y(h, t) = y_back + (h / 2) * sin(tilt) - (t / 2) * cos(tilt);
 function top_y(h) = y_back + h * sin(tilt);
 function back_print_z() = base_t + back_len * cos(tilt);
+// Where the partner face of the back meets the top of the shelf.
+function back_root_y() = y_back + back_t * cos(tilt);
+// How far up the slope that face stays over the shelf.
+function brace_s() = (base_y1 - back_root_y()) / sin(tilt);
+function back_partner_top_y() = y_back + back_len * sin(tilt) + back_t * cos(tilt);
 function fin_x_for(w) = (box_x - w) / 2 - gap;
 function screw_world(w) = fin_x_for(w) - fin_t + screw_x;
 
 module m3_hole(h, d) {
   cylinder(h = h, d = d, $fn = 32);
+}
+
+// Solid fill behind the back, from the partner face out to the rear edge
+// of the shelf, up to where that face reaches the rear edge.
+module back_brace() {
+  hull() {
+    translate([0, y_back, base_t])
+      rotate([90 - tilt, 0, 0])
+        translate([0, -1, -back_t])
+          cube([box_x, brace_s() + 1, 1.2]);
+    translate([0, back_root_y() - 0.4, base_t])
+      cube([box_x, base_y1 - (back_root_y() - 0.4), 2]);
+  }
 }
 
 module cradle() {
@@ -110,6 +131,7 @@ module cradle() {
         rotate([90 - tilt, 0, 0])
           translate([0, -2, -back_t])
             cube([box_x, back_len + 2, back_t]);
+      back_brace();
     }
     translate([
       ring_port_x - ring_port_w / 2,
@@ -214,6 +236,10 @@ assert(
 assert(y_back >= ring_port_y + ring_port_h / 2 + 0.5, "back must stay clear of the cable port");
 assert(com_y(215.5, 5.1) < box_y - 22, "13 inch iPad center must stay over the box");
 assert(top_y(215.5) < box_y - 4, "13 inch iPad top must stay over the lid");
+assert(back_t >= 5, "back must stay thick enough to take a bump");
+assert(back_root_y() < base_y1 - 4, "shelf must remain behind the back for the brace");
+assert(brace_s() > 40 && brace_s() < back_len - 20, "brace must thicken the lower back");
+assert(back_partner_top_y() < box_y - 4, "back must stay over the lid");
 assert(back_len >= 134.8, "back must cover an iPad mini");
 assert(screw_world(195.4) + boss_extra / 2 + 2 < grill_x0, "mini stop screw must clear the grill");
 assert(
@@ -240,6 +266,10 @@ echo(com_13 = com_y(215.5, 5.1));
 echo(margin_13 = box_y - com_y(215.5, 5.1));
 echo(top_13 = top_y(215.5));
 echo(back_print_z = back_print_z());
+echo(back_t = back_t);
+echo(back_root_y = back_root_y());
+echo(brace_s = brace_s());
+echo(back_partner_top_y = back_partner_top_y());
 echo(screw_mini = screw_world(195.4));
 echo(screw_13 = screw_world(281.6));
 

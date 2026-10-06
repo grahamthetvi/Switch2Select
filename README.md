@@ -119,7 +119,7 @@ Slide a side rail onto each end of the ledge, with the extensions already bolted
 
 ### Simple stand
 
-The simple stand is one cradle and two side stops. The back leans 8 degrees from vertical. A bare iPad sits on the shelf and rests against that back. The lip on the student side of the shelf is 8 mm tall and 2.4 mm thick. The open gap from the lip to the back is 13.5 mm, so an iPad from 5.1 mm to 7.5 mm thick can lean fully back. The lip stops the bottom edge if the iPad slides toward the student. The lip starts about 1 mm behind the speaker grill, so the grill stays clear.
+The simple stand is one cradle and two side stops. The back leans 8 degrees from vertical and is 6 mm thick. Behind that plate, the cradle fills in to the rear edge of the shelf, so the back is solid where it joins the base. A bare iPad sits on the shelf and rests against that back. The lip on the student side of the shelf is 8 mm tall and 2.4 mm thick. The open gap from the lip to the back is 13.5 mm, so an iPad from 5.1 mm to 7.5 mm thick can lean fully back. The lip stops the bottom edge if the iPad slides toward the student. The lip starts about 1 mm behind the speaker grill, so the grill stays clear.
 
 Eight degrees is a small lean, and it holds the iPad against the back. The center of a 13 inch iPad (215.5 mm tall and 5.1 mm thick) lands about 24 mm in front of the rear edge of the box. The cradle carries that iPad on the lid. The back is 160 mm along the slope, which covers an iPad mini. The top of a 10 inch or 13 inch iPad stands above the back and still leans on it.
 
