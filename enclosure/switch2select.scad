@@ -14,6 +14,8 @@ outer_x = 200;
 outer_y = 140;
 outer_z = 55;
 wall = 2.4;
+// Outside vertical corners. Flat faces keep the full outside size.
+corner_r = 6;
 
 floor_t = wall;
 lid_t = wall;
@@ -165,6 +167,15 @@ function partner_stem_y() = min(
   outer_y - wall - jack_body_len - jack_stop_t - stem_side_gap - stem_d / 2,
   outer_y - rocker_depth - stem_side_gap - stem_d / 2
 );
+
+module rounded_prism(size, r) {
+  hull() {
+    for (x = [r, size[0] - r])
+      for (y = [r, size[1] - r])
+        translate([x, y, 0])
+          cylinder(h = size[2], r = r, $fn = 64);
+  }
+}
 
 module hole_y(x, z, d, y0, depth) {
   translate([x, y0, z])
@@ -498,13 +509,13 @@ module bottom() {
   difference() {
     union() {
       difference() {
-        cube([outer_x, outer_y, bottom_z]);
+        rounded_prism([outer_x, outer_y, bottom_z], corner_r);
         translate([wall, wall, floor_t])
-          cube([
+          rounded_prism([
             outer_x - 2 * wall,
             outer_y - 2 * wall,
             bottom_z - floor_t + 1
-          ]);
+          ], corner_r - wall);
         student_cutouts();
         partner_cutouts();
       }
@@ -570,7 +581,7 @@ module lid_screw_holes() {
 module lid() {
   difference() {
     union() {
-      cube([outer_x, outer_y, lid_t]);
+      rounded_prism([outer_x, outer_y, lid_t], corner_r);
       lid_lip();
     }
     lid_screw_holes();
@@ -626,6 +637,19 @@ assert(braille_dot_h == 0.9, "braille dot height must be 0.9 mm");
 assert(cord_clear <= 0.4, "cord clearance must stay at or under 0.4 mm");
 assert(cord_hole_d < jack_d, "cord opening must leave a shoulder on the jack end");
 assert(cradle_end_gap > 0, "opposite jack cradles collide");
+assert(corner_r - wall >= 2, "inner corner must stay printable");
+assert(
+  corner_r + 2 < sd_x - sd_w / 2,
+  "corner radius must stay clear of the microSD slot"
+);
+assert(
+  partner_word_x(178, 5) + braille_dot_r + 0.5 < outer_x - corner_r,
+  "minus braille must stay on the flat partner wall"
+);
+assert(
+  wall + fit_gap + lip_notch > corner_r + (corner_r - wall) / sqrt(2) + 1,
+  "lid lip notch must clear the rounded inner corner"
+);
 assert(
   student_stem_y() - stem_head_d / 2 > wall + jack_body_len,
   "cord stem intersects the jack body"
