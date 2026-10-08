@@ -40,6 +40,14 @@ extern uint8_t focusIndex;
 void deviceBegin();
 void deviceLoop();
 
+// The open student page asks auto scan to wait (hold) or lends the five student
+// switches to a game (play). Resume returns to the four choices. A dropped page
+// does the same as resume.
+void browserHold(uint8_t clientNum);
+void browserPlay(uint8_t clientNum);
+void browserResume(uint8_t clientNum);
+void browserClientLeft(uint8_t clientNum);
+
 // Replace /config.json from the setup page and apply it while the device stays on.
 // Returns false when the card is missing or the JSON is not four choices.
 bool storeConfigJson(const char *json, size_t length);

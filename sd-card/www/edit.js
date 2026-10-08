@@ -16,6 +16,13 @@
   var scanAuto = document.getElementById("scan-auto");
   var scanStep = document.getElementById("scan-step");
 
+  var gameCatalog = [
+    ["/games/look/index.html", "Look"],
+    ["/games/chase/index.html", "Chase"],
+    ["/games/pop/index.html", "Pop"],
+    ["/games/drum/index.html", "Drum"]
+  ];
+
   var config = null;
   var choices = [];
   var dirty = false;
@@ -289,12 +296,32 @@
     gameInput.maxLength = 63;
     gameInput.placeholder = "/games/look/index.html";
     gameInput.value = source.type === "game" && source.src ? String(source.src) : "";
-    var useLook = el("button", "secondary", "Use the Look game");
-    useLook.type = "button";
+    var gameButtons = [];
+    var gameRow = el("div", "row");
+    function syncGameButtons() {
+      var path = gameInput.value.trim();
+      gameButtons.forEach(function (button) {
+        button.className = button.getAttribute("data-path") === path ? "secondary picked" : "secondary";
+      });
+    }
+    gameCatalog.forEach(function (entry) {
+      var button = el("button", "secondary", entry[1]);
+      button.type = "button";
+      button.setAttribute("data-path", entry[0]);
+      button.addEventListener("click", function () {
+        gameInput.value = entry[0];
+        gameInput.dispatchEvent(new Event("input", { bubbles: true }));
+        syncGameButtons();
+      });
+      gameButtons.push(button);
+      gameRow.appendChild(button);
+    });
     gamePanel.appendChild(labeled("Page on the card", gameInput));
-    gamePanel.appendChild(useLook);
-    gamePanel.appendChild(el("p", "hint", "A game is a page already stored on the card. Look shows a yellow shape that grows when this choice is selected."));
+    gamePanel.appendChild(gameRow);
+    gamePanel.appendChild(el("p", "hint", "Look, Chase, Pop, and Drum keep moving. Switches 1 to 4 play the left-to-right places. The scan switch plays the bright place. The device button leaves the game. After the switches have been quiet for about a minute, the choices come back."));
     card.appendChild(gamePanel);
+    gameInput.addEventListener("input", syncGameButtons);
+    syncGameButtons();
 
     var pulseInputChoice = document.createElement("input");
     pulseInputChoice.type = "checkbox";
@@ -492,10 +519,6 @@
       var file = videoInput.files && videoInput.files[0];
       onVideo(file);
       videoInput.value = "";
-    });
-    useLook.addEventListener("click", function () {
-      gameInput.value = "/games/look/index.html";
-      gameInput.dispatchEvent(new Event("input", { bubbles: true }));
     });
     listen.addEventListener("click", function () {
       if (!window.speechSynthesis) return;

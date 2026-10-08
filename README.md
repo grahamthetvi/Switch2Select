@@ -198,9 +198,13 @@ These paths are part of the project:
 - `/www/edit.js`
 - `/www/isolate.js`
 - `/media/yes.svg`
+- `/games/common.css`
 - `/games/look/index.html`
+- `/games/chase/index.html`
+- `/games/pop/index.html`
+- `/games/drum/index.html`
 
-`yes.svg` is a yellow circle on a black square. The Play page at `/games/look/index.html` shows a yellow shape on black. The shapes are a small circle, a square, and a large circle. The device sends a select when that page loads, which moves the shape from the small circle to the square. Selecting Play again loads the page from the start, so the square is what stays on screen.
+`yes.svg` is a yellow circle on a black square. The sample Play choice opens `/games/look/index.html`. Look keeps one yellow shape moving on black. Chase sends a ball between four places. Pop raises bubbles in four columns. Drum is four drums. In each game the four switches play the four places, left to right, and the scan switch plays too. A game keeps those switches while it is open. The choices return after the switches have been quiet for about a minute. The device button leaves sooner.
 
 The sample `config.json` points the Look option at `/media/pulse.mp4`, which is included. The firmware serves `.html`, `.css`, `.js`, `.json`, `.svg`, `.mp4`, `.wav`, `.png`, `.jpg`, and `.jpeg`.
 
@@ -231,7 +235,7 @@ The sample card is:
 | --- | --- | --- | --- | --- |
 | 1 | Yes | image | Yellow circle, speaks "Yes" | Yes |
 | 2 | Look | video | Plays `/media/pulse.mp4`, speaks "Look" | No |
-| 3 | Play | game | Yellow-shape game, speaks "Play" | No |
+| 3 | Play | game | Look game, speaks "Play" | No |
 | 4 | Help | tts | Shows and speaks "I need help" | Yes |
 
 Backgrounds in the sample are black. Word colors are yellow, except Look, which is red.
@@ -349,10 +353,10 @@ This is the behavior the firmware and the sample card are written to produce. Wo
 1. Toys unplugged or plugged into the partner-wall jacks only. Turn the rocker on. The relays stay silent and the toy contacts stay open. If the speech module is connected and no browser is open, it says "Port one, Yes". If the card rings are wired, the port 1 ring lights in that option's color and the other three stay off. Nothing on the student wall lights.
 2. On a phone, iPad, or computer, join the Wi-Fi network **Switch2Select**. The sketch sets no password.
 3. Open `http://192.168.4.1`. The device redirects to the page on the card. You should see a single target, the Yes image (a yellow circle) for the sample's first option. The page says "Port one, Yes".
-4. Press the switch plugged into input 1. The page selects Yes. Press input 4. The page selects Help and shows the words for that option. The matching ring is the one that lights.
-5. Wait and listen. In the default auto mode the highlight moves about every 3 seconds, the page follows it, and the spoken port changes with it. The ring follows the same port.
+4. Press the switch plugged into input 1. The page selects Yes. The picture pops and stays while the word is spoken. Auto scan waits during that. Press input 4. The page selects Help and shows the words for that option. The matching ring is the one that lights.
+5. Wait until the words have finished. In the default auto mode the highlight then moves about every 3 seconds, the page follows it, and the spoken port changes with it. The ring follows the same port.
 6. Press the scan jack while an option is highlighted. In auto mode that press selects the highlighted option. It does the same work as pressing that option's direct jack, including the toy pulse when `pulseOutput` is true.
-7. Press the plus and minus buttons. Volume moves in steps from 0 through 9 and is written back to `config.json` on the card. With the page open, that level is the browser speech level. With the page closed, it is the DFR0760 level. Press the device button (the square mark). It does not move the highlight and it does not pulse a toy. It says the port that is in use, for example "Port one, Yes". With the page open, a video starts again from the beginning, and the Look game steps to the next shape.
+7. Press the plus and minus buttons. Volume moves in steps from 0 through 9 and is written back to `config.json` on the card. With the page open, that level is the browser speech level. With the page closed, it is the DFR0760 level. Press the device button (the square mark). It does not move the highlight and it does not pulse a toy. It says the port that is in use, for example "Port one, Yes". With the page open, a video starts again from the beginning. While a game is open, this button leaves the game and says the port. The four switches and the scan switch play the game.
 8. Plug a battery toy's switch lead into toy jack 1 or toy jack 4. Select Yes or Help. The contact closes for about one second (`outputPulseMs` is 1000) and then opens. Select Look or Play. Those sample options have `pulseOutput` false, so their toy jacks stay open.
 9. Close the browser page so nothing is connected to the device. Select Help again. The DFR0760 speaks "Port four, I need help". The toy contact still opens when the one-second pulse ends, including while the module is still speaking.
 
@@ -374,7 +378,7 @@ A partner prepares the card and the toy leads. A student uses the five switches 
 
 The partner changes the four choices on the setup page. On the student screen, tap Setup in the top corner, or open `http://192.168.4.1/www/edit.html`. A phone that has joined Switch2Select can open that address and leave the student screen in place. Save writes the card, and the device uses the new settings while it stays on. The sketch has to be the one that accepts that save. Flash it, and copy the `www` files onto the card, before you rely on the page.
 
-The page edits scan mode, the time on each choice, how long a toy stays on, volume, card-light brightness, and each choice. A picture can be taken or chosen on the iPad. Remove background lifts the subject off a plain background, such as paper or a table, and can draw an outline in a chosen color. That work runs in the browser. The device Wi-Fi does not reach the internet, so bring a photo with a plain background when you can. Videos need to be short MP4 files. Photos and videos from the page are stored as `/media/1.png` and `/media/1.mp4`, and the same pattern for choices 2, 3, and 4. A game stays a page already on the card, such as `/games/look/index.html`.
+The page edits scan mode, the time on each choice, how long a toy stays on, volume, card-light brightness, and each choice. A picture can be taken or chosen on the iPad. Remove background lifts the subject off a plain background, such as paper or a table, and can draw an outline in a chosen color. That work runs in the browser. The device Wi-Fi does not reach the internet, so bring a photo with a plain background when you can. Videos need to be short MP4 files. Photos and videos from the page are stored as `/media/1.png` and `/media/1.mp4`, and the same pattern for choices 2, 3, and 4. A game stays a page already on the card. Look, Chase, Pop, and Drum are the ones on the card. The setup page has a button for each.
 
 Editing `config.json` on a computer still works. Copy the card back, then turn the rocker off and on. Volume buttons still write the volume into the file while the device is on.
 
@@ -386,15 +390,19 @@ There are four options, numbered 1 to 4. Speech names the port that is highlight
 
 A selection always updates the ring and the page. It closes that option's toy contact only when `pulseOutput` is true, and only for `outputPulseMs`.
 
+Choosing a picture, words, or a video pauses auto scan so the student can look. A picture or the words stay up long enough to be spoken, then the scan continues from that choice. A video stays until it ends, or for about a minute and a half if it does not end. Choosing the same picture, words, or video again plays it again.
+
+Choosing a game pauses auto scan and lends the five student switches to that game. Later presses stay in the game: they do not move the four choices and they do not pulse a toy. The opening press still can. The four direct switches play four places, left to right, matching jacks 1 to 4. The scan switch plays the moving bright place, or the next place in Look and Chase. The game keeps moving while it waits, so there is something to look at between presses. Presses keep the game open. After the switches have been quiet for about a minute, the choices return and auto scan continues from that game. The device button leaves at once and says the port. It does not play the game.
+
 Speech depends on the page:
 
 - While a browser has the page open, the browser speaks and the DFR0760 stays quiet.
 - While no page is connected, the DFR0760 speaks the same moments. Moving the highlight speaks "Port one, Yes" and so on: the port, then the option `label`. Selecting an option speaks the port and then `phrase`, or `label` when `phrase` is empty.
 - While a browser has the page open, moving the highlight speaks that same port cue. Selecting speaks the phrase, or the label, without the port in front of it, so the screen says the message.
 
-The device button is the square mark on the partner wall. It does not select an option, move the scan, or close a toy contact. It repeats the port that is in use. On the page it also acts on what is already showing. A video plays again from the start. A game receives an interact message. The Look game uses that message to step to the next shape, the same step a selection would make. A picture or words are spoken again. With the page closed, the speech module only repeats the port cue.
+The device button is the square mark on the partner wall. It does not select an option, move the scan, or close a toy contact. It repeats the port that is in use. On the page it also acts on what is already showing. A video plays again from the start. A picture or words are spoken again. While a game is open, the button leaves the game instead. With the page closed, the speech module only repeats the port cue.
 
-On the page, scanning an `image` option shows the picture. Scanning any other type shows the label as a word. Selecting an `image` shows the picture, a `video` plays `src`, a `game` loads `src` in the page, and a `tts` option shows the phrase (or the label if the phrase is empty). For `tts`, the browser speaks that phrase. For the other types, the browser speaks the label.
+On the page, scanning an `image` option shows the picture. Scanning any other type shows the label as a word. The word or picture eases larger and smaller so the screen is not still. Selecting an `image` pops the picture, a `video` plays `src`, a `game` loads `src` and then stays there while the switches play it, and a `tts` option shows the phrase (or the label if the phrase is empty). For `tts`, the browser speaks that phrase. For the other types, the browser speaks the label. A game is not loaded again on every switch. Each later switch is sent into the game.
 
 Words drawn by `style.css` are bold uppercase Arial, with Helvetica Neue and then a generic sans-serif as the font fallbacks. The page uppercases the letters on screen. Speech still says the phrase as it is written in `config.json`. The letter fill is the option `color`. A red outline surrounds each letter. The area behind the target is the option `background`. In the sample, that is yellow letters with a red outline on black, except Look, whose letters are red with the same red outline.
 

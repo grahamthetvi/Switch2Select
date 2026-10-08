@@ -388,11 +388,36 @@ static void sendHello(uint8_t clientNum) {
   webSocket.sendTXT(clientNum, message);
 }
 
+static bool payloadTypeIs(const uint8_t *payload, size_t length, const char *type) {
+  char text[96];
+  if (payload == nullptr || type == nullptr || length == 0 || length >= sizeof(text)) {
+    return false;
+  }
+  memcpy(text, payload, length);
+  text[length] = '\0';
+  char needle[40];
+  snprintf(needle, sizeof(needle), "\"type\":\"%s\"", type);
+  return strstr(text, needle) != nullptr;
+}
+
 static void onWebSocketEvent(uint8_t clientNum, WStype_t type, uint8_t *payload, size_t length) {
-  (void)payload;
-  (void)length;
   if (type == WStype_CONNECTED) {
     sendHello(clientNum);
+    return;
+  }
+  if (type == WStype_DISCONNECTED) {
+    browserClientLeft(clientNum);
+    return;
+  }
+  if (type != WStype_TEXT) {
+    return;
+  }
+  if (payloadTypeIs(payload, length, "hold")) {
+    browserHold(clientNum);
+  } else if (payloadTypeIs(payload, length, "play")) {
+    browserPlay(clientNum);
+  } else if (payloadTypeIs(payload, length, "resume")) {
+    browserResume(clientNum);
   }
 }
 
@@ -415,6 +440,16 @@ void broadcastSelect(uint8_t index) {
   char message[48];
   snprintf(message, sizeof(message), "{\"type\":\"select\",\"index\":%u}", static_cast<unsigned>(index));
   webSocket.broadcastTXT(message);
+}
+
+void broadcastSwitch(uint8_t index) {
+  char message[48];
+  snprintf(message, sizeof(message), "{\"type\":\"switch\",\"index\":%u}", static_cast<unsigned>(index));
+  webSocket.broadcastTXT(message);
+}
+
+void broadcastScan() {
+  webSocket.broadcastTXT("{\"type\":\"scan\"}");
 }
 
 void broadcastVolume(uint8_t level) {

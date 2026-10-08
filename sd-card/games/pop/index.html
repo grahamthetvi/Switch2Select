@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Pop</title>
+  <link rel="stylesheet" href="/games/common.css">
+  <style>
+    #board {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+    }
+
+    .bubble {
+      position: absolute;
+      border-radius: 50%;
+      animation: drift 2.4s ease-in-out infinite;
+    }
+
+    .bubble.hot {
+      z-index: 2;
+      box-shadow: 0 0 0 1.6vmin #ffffff, 0 0 0 3.2vmin #ff0000 !important;
+    }
+
+    .bubble.burst {
+      animation: burst 0.28s ease-out forwards;
+    }
+
+    @keyframes drift {
+      0%,
+      100% { transform: translateX(0) scale(1); }
+      50% { transform: translateX(2vmin) scale(1.06); }
+    }
+
+    @keyframes burst {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(1.7); opacity: 0; }
+    }
+  </style>
+</head>
+<body data-pops="0" data-highlight="0">
+  <div id="board"></div>
+  <script src="/www/switch2select.js"></script>
+  <script>
+    (function () {
+      var board = document.getElementById("board");
+      var bubbles = [];
+      var pops = 0;
+      var highlight = 0;
+      var lastStep = 0;
+      var previous = 0;
+      var lanes = [14, 38, 62, 86];
+      var colors = ["#ffff00", "#ff2a2a", "#ffffff", "#ffb000"];
+      var tones = [392, 494, 587, 698];
+
+      function place(bubble) {
+        bubble.el.style.left = "calc(" + lanes[bubble.lane] + "% - " + (bubble.size / 2) + "vmin)";
+        bubble.el.style.top = bubble.y + "%";
+      }
+
+      function make(lane, y, size) {
+        var el = document.createElement("div");
+        el.className = "bubble";
+        el.style.width = size + "vmin";
+        el.style.height = size + "vmin";
+        el.style.background = colors[lane];
+        el.style.boxShadow = "0 0 0 0.75vmin " + (colors[lane] === "#ff2a2a" ? "#ffff00" : "#ff0000");
+        board.appendChild(el);
+        var bubble = {
+          el: el,
+          lane: lane,
+          y: y,
+          size: size,
+          speed: 0.012 + lane * 0.002,
+          alive: true
+        };
+        bubbles.push(bubble);
+        place(bubble);
+        return bubble;
+      }
+
+      function laneCount(lane) {
+        var count = 0;
+        var i;
+        for (i = 0; i < bubbles.length; i += 1) {
+          if (bubbles[i].alive && bubbles[i].lane === lane) count += 1;
+        }
+        return count;
+      }
+
+      function lowest(lane) {
+        var best = null;
+        var i;
+        for (i = 0; i < bubbles.length; i += 1) {
+          var bubble = bubbles[i];
+          if (!bubble.alive || bubble.lane !== lane) continue;
+          if (bubble.y < -8 || bubble.y > 102) continue;
+          if (!best || bubble.y > best.y) best = bubble;
+        }
+        return best;
+      }
+
+      function burst(bubble) {
+        bubble.alive = false;
+        bubble.el.classList.remove("hot");
+        bubble.el.classList.add("burst");
+        pops += 1;
+        document.body.setAttribute("data-pops", String(pops));
+        if (window.Switch2Select) Switch2Select.tone(tones[bubble.lane], 150);
+        var el = bubble.el;
+        window.setTimeout(function () {
+          if (el.parentNode) el.parentNode.removeChild(el);
+        }, 280);
+        make(bubble.lane, 108, bubble.size);
+      }
+
+      function popLane(lane) {
+        if (lane !== 0 && lane !== 1 && lane !== 2 && lane !== 3) return;
+        highlight = lane;
+        lastStep = performance.now();
+        document.body.setAttribute("data-highlight", String(highlight));
+        var bubble = lowest(lane);
+        if (!bubble) bubble = make(lane, 70, 26);
+        burst(bubble);
+      }
+
+      function frame(now) {
+        if (!previous) previous = now;
+        var dt = now - previous;
+        previous = now;
+        if (dt > 40) dt = 40;
+        if (!lastStep) lastStep = now;
+        if (now - lastStep > 2400) {
+          highlight = (highlight + 1) % 4;
+          lastStep = now;
+          document.body.setAttribute("data-highlight", String(highlight));
+        }
+        var i;
+        for (i = 0; i < bubbles.length; i += 1) {
+          var bubble = bubbles[i];
+          if (!bubble.alive) continue;
+          bubble.y -= bubble.speed * dt;
+          if (bubble.y < -28) {
+            bubble.y = 108;
+            bubble.speed = 0.012 + ((bubble.lane + pops) % 4) * 0.003;
+          }
+          place(bubble);
+          bubble.el.classList.remove("hot");
+        }
+        var hot = lowest(highlight);
+        if (hot) hot.el.classList.add("hot");
+        for (i = 0; i < 4; i += 1) {
+          if (laneCount(i) < 1) make(i, 100 + i * 6, 20);
+        }
+        if (bubbles.length > 20) {
+          var kept = [];
+          for (i = 0; i < bubbles.length; i += 1) {
+            if (bubbles[i].alive) kept.push(bubbles[i]);
+          }
+          bubbles = kept;
+        }
+        window.requestAnimationFrame(frame);
+      }
+
+      var start;
+      for (start = 0; start < 4; start += 1) make(start, 18 + start * 18, 18 + (start % 3) * 5);
+      document.body.addEventListener("click", function (event) {
+        if (!window.Switch2Select) return;
+        if (event.target.closest && event.target.closest("#s2s-demo")) return;
+        popLane(Switch2Select.column(event));
+      });
+      if (window.Switch2Select) {
+        Switch2Select.onSwitch(function (message) {
+          var index = message && message.index;
+          if (index !== 0 && index !== 1 && index !== 2 && index !== 3) return;
+          popLane(index);
+        });
+        Switch2Select.onScan(function () {
+          popLane(highlight);
+        });
+      }
+      window.requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>

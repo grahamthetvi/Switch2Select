@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Drum</title>
+  <link rel="stylesheet" href="/games/common.css">
+  <style>
+    #row {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-evenly;
+    }
+
+    .pad {
+      width: 24vmin;
+      height: 24vmin;
+      border-radius: 50%;
+    }
+
+    .face {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      animation: pulse 1.7s ease-in-out infinite;
+    }
+
+    .pad:nth-child(2) .face { animation-delay: -0.4s; }
+    .pad:nth-child(3) .face { animation-delay: -0.8s; }
+    .pad:nth-child(4) .face { animation-delay: -1.2s; }
+
+    .pad.lit {
+      box-shadow: 0 0 0 1.25vmin #ffffff, 0 0 0 2.45vmin #ff0000;
+    }
+
+    .pad.hit .face {
+      animation: smash 0.28s ease-out;
+    }
+
+    @keyframes pulse {
+      0%,
+      100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    @keyframes smash {
+      0% { transform: scale(1); }
+      35% { transform: scale(1.34); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body data-lit="0" data-hits="0">
+  <div id="row">
+    <div class="pad" data-index="0"><div class="face"></div></div>
+    <div class="pad" data-index="1"><div class="face"></div></div>
+    <div class="pad" data-index="2"><div class="face"></div></div>
+    <div class="pad" data-index="3"><div class="face"></div></div>
+  </div>
+  <script src="/www/switch2select.js"></script>
+  <script>
+    (function () {
+      var pads = document.querySelectorAll(".pad");
+      var colors = ["#ffff00", "#ff2a2a", "#ffffff", "#ffb000"];
+      var tones = [196, 262, 330, 392];
+      var lit = 0;
+      var hits = 0;
+      var tour = 0;
+
+      pads.forEach(function (pad, index) {
+        var face = pad.querySelector(".face");
+        face.style.background = colors[index];
+        face.style.boxShadow = "inset 0 0 0 1.1vmin " + (colors[index] === "#ff2a2a" ? "#ffff00" : "#ff0000");
+        face.addEventListener("animationend", function (event) {
+          if (event.animationName === "smash") pad.classList.remove("hit");
+        });
+      });
+
+      function light(index) {
+        lit = index;
+        document.body.setAttribute("data-lit", String(lit));
+        var i;
+        for (i = 0; i < pads.length; i += 1) {
+          if (i === lit) pads[i].classList.add("lit");
+          else pads[i].classList.remove("lit");
+        }
+      }
+
+      function schedule() {
+        if (tour) window.clearInterval(tour);
+        tour = window.setInterval(function () {
+          light((lit + 1) % 4);
+        }, 2400);
+      }
+
+      function hit(index) {
+        if (index !== 0 && index !== 1 && index !== 2 && index !== 3) return;
+        light(index);
+        var pad = pads[index];
+        pad.classList.remove("hit");
+        void pad.offsetWidth;
+        pad.classList.add("hit");
+        hits += 1;
+        document.body.setAttribute("data-hits", String(hits));
+        if (window.Switch2Select) Switch2Select.tone(tones[index], 210);
+        schedule();
+      }
+
+      document.body.addEventListener("click", function (event) {
+        if (!window.Switch2Select) return;
+        if (event.target.closest && event.target.closest("#s2s-demo")) return;
+        hit(Switch2Select.column(event));
+      });
+
+      if (window.Switch2Select) {
+        Switch2Select.onSwitch(function (message) {
+          var index = message && message.index;
+          if (index !== 0 && index !== 1 && index !== 2 && index !== 3) return;
+          hit(index);
+        });
+        Switch2Select.onScan(function () {
+          hit(lit);
+        });
+      }
+
+      light(0);
+      schedule();
+    })();
+  </script>
+</body>
+</html>
