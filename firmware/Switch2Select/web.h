@@ -13,6 +13,8 @@
 bool anyWebSocketClient();
 void broadcastFocus(uint8_t index);
 void broadcastSelect(uint8_t index);
+void broadcastSwitch(uint8_t index);
+void broadcastScan();
 void broadcastVolume(uint8_t level);
 void broadcastInteract(uint8_t index);
 void broadcastConfig();

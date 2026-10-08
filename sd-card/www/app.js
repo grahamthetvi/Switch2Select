@@ -18,11 +18,16 @@
   var volumeLevel = 5;
   var deviceDriving = false;
   var scanTimer = 0;
+  var roundTimer = 0;
   var socketRetry = 0;
+  var liveSocket = null;
   var speakToken = 0;
   var viewToken = 0;
   var mediaEpoch = Date.now();
   var showingChoice = false;
+  var mode = "scan";
+  var pendingGame = null;
+  var playIdleMs = 70000;
   var portWords = ["one", "two", "three", "four"];
 
   function demoConfig() {
@@ -32,10 +37,10 @@
       outputPulseMs: 1000,
       volume: 5,
       options: [
-        option("Yes", "", "image", "/media/yes.svg", "#000000", "#ffff00"),
-        option("Look", "", "video", "/media/pulse.mp4", "#000000", "#ff0000"),
-        option("Play", "", "game", "/games/look/index.html", "#000000", "#ffff00"),
-        option("Help", "I need help", "tts", "", "#000000", "#ff0000")
+        option("Yes", "Yes", "image", "/media/yes.svg", "#000000", "#ffff00"),
+        option("Look", "Look", "video", "/media/pulse.mp4", "#000000", "#ff0000"),
+        option("Play", "Play", "game", "/games/look/index.html", "#000000", "#ffff00"),
+        option("Help", "I need help", "tts", "", "#000000", "#ffff00")
       ]
     };
   }
@@ -115,6 +120,12 @@
       });
   }
 
+  function publishVolume() {
+    if (window.Switch2Select && typeof Switch2Select.setLevel === "function") {
+      Switch2Select.setLevel(volumeLevel);
+    }
+  }
+
   function mediaSrc(src) {
     if (!src) return "";
     var join = src.indexOf("?") >= 0 ? "&" : "?";
@@ -150,7 +161,49 @@
     }, 60);
   }
 
+  function speechHoldMs(text) {
+    var letters = text ? String(text).length : 0;
+    var estimate = 1600 + letters * 90;
+    var dwell = config ? config.scanDelayMs : 3000;
+    var ms = estimate;
+    if (dwell > ms) ms = dwell;
+    if (ms < 3500) ms = 3500;
+    if (ms > 12000) ms = 12000;
+    return ms;
+  }
+
+  function clearRound() {
+    if (!roundTimer) return;
+    window.clearTimeout(roundTimer);
+    roundTimer = 0;
+  }
+
+  function armRound(ms, token) {
+    clearRound();
+    roundTimer = window.setTimeout(function () {
+      roundTimer = 0;
+      if (token !== viewToken || mode === "scan") return;
+      endRound(false);
+    }, ms);
+  }
+
+  function sendControl(type) {
+    if (!liveSocket || liveSocket.readyState !== 1) return;
+    try {
+      liveSocket.send(JSON.stringify({ type: type }));
+    } catch (err) {
+      /* the socket can close between the ready check and the send */
+    }
+  }
+
+  function startControl(kind) {
+    mode = kind === "play" ? "play" : "activity";
+    sendControl(mode === "play" ? "play" : "hold");
+    stopAutoScan();
+  }
+
   function clearVisual() {
+    pendingGame = null;
     var video = visual.querySelector("video");
     if (video) {
       video.pause();
@@ -161,30 +214,48 @@
         /* older players can throw if the element is already going away */
       }
     }
+    var iframe = visual.querySelector("iframe");
+    if (iframe) iframe.src = "about:blank";
     visual.textContent = "";
   }
 
-  function showText(text) {
-    clearVisual();
-    target.hidden = false;
-    target.textContent = text;
+  function markPop(el) {
+    var stamp = String(Date.now() + Math.random());
+    el.setAttribute("data-pop", stamp);
+    el.className = "chosen";
+    el.addEventListener("animationend", function done() {
+      el.removeEventListener("animationend", done);
+      if (el.getAttribute("data-pop") !== stamp) return;
+      el.className = "";
+    });
   }
 
-  function showImage(item) {
+  function showText(text, chosen) {
+    clearVisual();
+    target.hidden = false;
+    target.textContent = text || "";
+    if (chosen) markPop(target);
+    else target.className = "";
+  }
+
+  function showImage(item, chosen) {
     clearVisual();
     target.hidden = true;
     target.textContent = "";
+    target.className = "";
     var img = document.createElement("img");
     img.src = mediaSrc(item.src);
     img.alt = item.label || "";
     img.draggable = false;
     visual.appendChild(img);
+    if (chosen) markPop(img);
   }
 
-  function showVideo(item) {
+  function showVideo(item, token) {
     clearVisual();
     target.hidden = true;
     target.textContent = "";
+    target.className = "";
     var video = document.createElement("video");
     video.src = mediaSrc(item.src);
     video.autoplay = true;
@@ -196,25 +267,58 @@
     video.addEventListener("loadedmetadata", function () {
       applyElementVolume(video);
     });
+    video.addEventListener("ended", function () {
+      if (token !== viewToken) return;
+      endRound(false);
+    });
+    video.addEventListener("error", function () {
+      if (token !== viewToken) return;
+      armRound(3000, token);
+    });
     visual.appendChild(video);
     var pending = video.play();
     if (pending && typeof pending.catch === "function") {
       pending.catch(function () {});
     }
+    armRound(90000, token);
   }
 
-  function showGame(item, index) {
+  function openGame(item, index, token) {
+    var existing = visual.querySelector("iframe");
+    if (existing && existing.getAttribute("data-game") === item.src && existing.getAttribute("data-ready") === "1") {
+      postToFrame(existing, "switch", index);
+      return;
+    }
     clearVisual();
     target.hidden = true;
     target.textContent = "";
+    target.className = "";
     var iframe = document.createElement("iframe");
-    iframe.src = mediaSrc(item.src);
-    iframe.title = item.label || "Activity";
+    iframe.setAttribute("data-game", item.src);
+    iframe.title = item.label || "Game";
     iframe.setAttribute("frameborder", "0");
+    iframe.setAttribute("scrolling", "no");
     iframe.addEventListener("load", function () {
-      postToFrame(iframe, "select", index);
+      if (token !== viewToken) return;
+      var path = item.src.split("?")[0];
+      var loaded = "";
+      try {
+        loaded = iframe.contentWindow && iframe.contentWindow.location
+          ? iframe.contentWindow.location.pathname
+          : "";
+      } catch (err) {
+        return;
+      }
+      if (loaded !== path) return;
+      if (iframe.getAttribute("data-ready") === "1") return;
+      iframe.setAttribute("data-ready", "1");
+      var queued = pendingGame;
+      pendingGame = null;
+      if (queued) postToFrame(iframe, queued.type, queued.index);
+      else postToFrame(iframe, "switch", index);
     });
     visual.appendChild(iframe);
+    iframe.src = mediaSrc(item.src);
   }
 
   function applyElementVolume(video) {
@@ -255,58 +359,94 @@
     return true;
   }
 
-  function afterGameMessage(leavingGame, apply) {
-    if (leavingGame) window.setTimeout(apply, 0);
-    else apply();
+  function notePlayInput() {
+    if (mode !== "play") return;
+    sendControl("play");
+    armRound(playIdleMs, viewToken);
   }
 
-  function exactIndex(value) {
-    if (value === 0 || value === 1 || value === 2 || value === 3) return value;
-    return -1;
+  function forwardPlay(type, index) {
+    if (mode !== "play") return;
+    notePlayInput();
+    var iframe = visual.querySelector("iframe");
+    if (!iframe || iframe.getAttribute("data-ready") !== "1") {
+      pendingGame = { type: type, index: index };
+      return;
+    }
+    postToFrame(iframe, type, index);
   }
 
   function renderFocus(index) {
     var item = config.options[index];
     currentIndex = index;
     applyColors(item);
-    if (item.type === "image" && item.src) showImage(item);
-    else showText(item.label);
+    if (item.type === "image" && item.src) showImage(item, false);
+    else showText(item.label, false);
     return item;
   }
 
   function showFocus(index, silent) {
+    clearRound();
+    if (mode !== "scan") {
+      mode = "scan";
+      sendControl("resume");
+    }
     currentIndex = index;
     viewToken += 1;
-    var token = viewToken;
-    var leavingGame = relay("focus", index);
-    afterGameMessage(leavingGame, function () {
-      if (token !== viewToken) return;
+    showingChoice = false;
+    renderFocus(index);
+    if (!silent) speak(portCue(index));
+  }
+
+  function endRound(announce) {
+    var item = config.options[currentIndex];
+    var keepImage = !announce && mode !== "play" && item && item.type === "image" && item.src && visual.querySelector("img");
+    if (keepImage) {
+      clearRound();
+      mode = "scan";
+      sendControl("resume");
       showingChoice = false;
-      renderFocus(index);
-      if (!silent) speak(portCue(index));
-    });
+      viewToken += 1;
+      target.className = "";
+      armAutoScan();
+      return;
+    }
+    showFocus(currentIndex, !announce);
+    armAutoScan();
   }
 
   function activate(index, silent) {
     var item = config.options[index];
+    if (!item) return;
     currentIndex = index;
     viewToken += 1;
     var token = viewToken;
-    var openingGame = item.type === "game" && !!item.src;
-    var leavingGame = !openingGame && relay("select", index);
-    afterGameMessage(leavingGame, function () {
-      if (token !== viewToken) return;
-      showingChoice = true;
-      applyColors(item);
-      if (openingGame) showGame(item, index);
-      else if (item.type === "image" && item.src) showImage(item);
-      else if (item.type === "video" && item.src) showVideo(item);
-      else showText(item.type === "tts" ? item.phrase || item.label : item.label);
-      if (silent) return;
-      if (item.type === "tts") speak(item.phrase || item.label);
-      else speak(item.label);
-    });
-    armAutoScan();
+    clearRound();
+    showingChoice = true;
+    applyColors(item);
+    if (item.type === "game" && item.src) {
+      startControl("play");
+      openGame(item, index, token);
+      armRound(playIdleMs, token);
+      if (!silent) speak(item.label);
+      return;
+    }
+    startControl("hold");
+    if (item.type === "image" && item.src) {
+      showImage(item, true);
+      if (!silent) speak(item.label);
+      armRound(speechHoldMs(item.label), token);
+      return;
+    }
+    if (item.type === "video" && item.src) {
+      showVideo(item, token);
+      if (!silent) speak(item.label);
+      return;
+    }
+    var line = item.type === "tts" ? (item.phrase || item.label) : item.label;
+    showText(line, true);
+    if (!silent) speak(line);
+    armRound(speechHoldMs(line), token);
   }
 
   function advance() {
@@ -330,14 +470,18 @@
   }
 
   function performDeviceInteract() {
+    if (mode === "play") {
+      endRound(true);
+      return;
+    }
     var item = config.options[currentIndex];
-    var inGame = relay("interact", currentIndex);
-    if (!inGame && item.type === "video") replayVideo();
+    if (item && item.type === "video") replayVideo();
     speak(portCue(currentIndex));
   }
 
   function setVolume(level) {
     volumeLevel = clampVolume(level, volumeLevel);
+    publishVolume();
     applyVideoVolume();
     relay("volume", currentIndex);
   }
@@ -350,7 +494,7 @@
 
   function armAutoScan() {
     stopAutoScan();
-    if (!demoMode || deviceDriving || !config || config.scanMode !== "auto") return;
+    if (!demoMode || deviceDriving || mode !== "scan" || !config || config.scanMode !== "auto") return;
     scanTimer = window.setInterval(function () {
       showFocus((currentIndex + 1) % config.options.length);
     }, config.scanDelayMs);
@@ -362,6 +506,10 @@
     stopAutoScan();
     if (message.type === "hello") {
       if (message.volume != null) setVolume(message.volume);
+      if (mode !== "scan") {
+        sendControl(mode === "play" ? "play" : "hold");
+        return;
+      }
       var helloIndex = exactIndex(message.index);
       showFocus(helloIndex < 0 ? 0 : helloIndex);
       return;
@@ -375,7 +523,21 @@
     if (message.type === "select") {
       var selectIndex = exactIndex(message.index);
       if (selectIndex < 0) return;
+      if (mode === "play") {
+        forwardPlay("switch", selectIndex);
+        return;
+      }
       activate(selectIndex);
+      return;
+    }
+    if (message.type === "switch") {
+      var switchIndex = exactIndex(message.index);
+      if (switchIndex < 0) return;
+      forwardPlay("switch", switchIndex);
+      return;
+    }
+    if (message.type === "scan") {
+      forwardPlay("scan", currentIndex);
       return;
     }
     if (message.type === "volume") {
@@ -383,8 +545,12 @@
       return;
     }
     if (message.type === "interact") {
+      if (mode === "play") {
+        endRound(true);
+        return;
+      }
       var interactIndex = exactIndex(message.index);
-      if (interactIndex >= 0 && interactIndex !== currentIndex) {
+      if (mode === "scan" && interactIndex >= 0 && interactIndex !== currentIndex) {
         currentIndex = interactIndex;
         renderFocus(interactIndex);
       }
@@ -397,9 +563,10 @@
         if (!loaded) return;
         config = loaded;
         volumeLevel = loaded.volume;
+        publishVolume();
         applyVideoVolume();
-        if (showingChoice) activate(currentIndex, true);
-        else showFocus(currentIndex, true);
+        showFocus(currentIndex, true);
+        armAutoScan();
       });
     }
   }
@@ -416,15 +583,19 @@
     } catch (err) {
       return;
     }
+    liveSocket = socket;
     socket.onopen = function () {
       deviceDriving = true;
       stopAutoScan();
+      if (mode === "play") sendControl("play");
+      else if (mode === "activity") sendControl("hold");
     };
     socket.onerror = function () {};
     socket.onclose = function () {
       var wasDriving = deviceDriving;
       deviceDriving = false;
-      if (wasDriving) armAutoScan();
+      if (liveSocket === socket) liveSocket = null;
+      if (wasDriving && mode === "scan") armAutoScan();
       socketRetry = window.setTimeout(connectSocket, 5000);
     };
     socket.onmessage = function (event) {
@@ -446,10 +617,16 @@
     var indexAttr = button.getAttribute("data-index");
     if (indexAttr != null) {
       var index = exactIndex(Number(indexAttr));
-      if (index >= 0) activate(index);
+      if (index < 0) return;
+      if (mode === "play") forwardPlay("switch", index);
+      else activate(index);
       return;
     }
     var action = button.getAttribute("data-action");
+    if (mode === "play" && (action === "advance" || action === "select")) {
+      forwardPlay("scan", currentIndex);
+      return;
+    }
     if (action === "advance") advance();
     else if (action === "select") activate(currentIndex);
     else if (action === "volup") setVolume(volumeLevel + 1);
@@ -463,17 +640,19 @@
     var key = event.key;
     if (key === "1" || key === "2" || key === "3" || key === "4") {
       event.preventDefault();
-      activate(Number(key) - 1);
+      var index = Number(key) - 1;
+      if (mode === "play") forwardPlay("switch", index);
+      else activate(index);
       return;
     }
-    if (key === "ArrowRight") {
+    if (key === "ArrowRight" || key === "Enter") {
       event.preventDefault();
-      advance();
-      return;
-    }
-    if (key === "Enter") {
-      event.preventDefault();
-      activate(currentIndex);
+      if (mode === "play") {
+        forwardPlay("scan", currentIndex);
+        return;
+      }
+      if (key === "ArrowRight") advance();
+      else activate(currentIndex);
       return;
     }
     if (key === "ArrowUp") {
@@ -492,6 +671,25 @@
     }
   }
 
+  function onGameMessage(event) {
+    var data = event.data;
+    if (!data || data.source !== "switch2select-game") return;
+    var iframe = visual.querySelector("iframe");
+    if (!iframe || event.source !== iframe.contentWindow) return;
+    if (data.type === "finish") {
+      if (mode === "play") endRound(false);
+      return;
+    }
+    if (data.type === "tone" && window.Switch2Select) {
+      Switch2Select.tone(Number(data.freq), Number(data.ms));
+    }
+  }
+
+  function exactIndex(value) {
+    if (value === 0 || value === 1 || value === 2 || value === 3) return value;
+    return -1;
+  }
+
   function fitStage() {
     if (!demoMode) return;
     stage.style.bottom = demo.offsetHeight + "px";
@@ -503,12 +701,17 @@
     fitStage();
   }
   window.addEventListener("resize", fitStage);
+  window.addEventListener("message", onGameMessage);
+  window.addEventListener("pagehide", function () {
+    sendControl("resume");
+  });
   demo.addEventListener("click", onDemoClick);
   document.addEventListener("keydown", onDemoKey);
 
   loadConfig(false).then(function (loaded) {
     config = loaded;
     volumeLevel = loaded.volume;
+    publishVolume();
     renderFocus(0);
     if (demoMode) speak(portCue(0));
     armAutoScan();

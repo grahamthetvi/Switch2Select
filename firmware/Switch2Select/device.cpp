@@ -23,6 +23,8 @@
 extern bool anyWebSocketClient();
 extern void broadcastFocus(uint8_t index);
 extern void broadcastSelect(uint8_t index);
+extern void broadcastSwitch(uint8_t index);
+extern void broadcastScan();
 extern void broadcastVolume(uint8_t level);
 extern void broadcastInteract(uint8_t index);
 extern void broadcastConfig();
@@ -103,6 +105,16 @@ portMUX_TYPE relayMux = portMUX_INITIALIZER_UNLOCKED;
 
 bool scanTimerArmed = false;
 uint32_t scanDueMs = 0;
+
+// Scan is the choice highlight. Hold keeps that highlight still while a picture,
+// words, or a video is on screen. Play lends the student switches to a game.
+constexpr uint8_t kActivityScan = 0;
+constexpr uint8_t kActivityHold = 1;
+constexpr uint8_t kActivityPlay = 2;
+constexpr uint32_t kActivityLimitMs = 180000;
+uint8_t activityMode = kActivityScan;
+int8_t activityClient = -1;
+uint32_t activitySinceMs = 0;
 
 void setText(char *dest, size_t destSize, const char *text) {
   if (destSize == 0) {
@@ -430,6 +442,10 @@ void selectOption(uint8_t index) {
 }
 
 void advanceFocus() {
+  if (activityMode != kActivityScan) {
+    activityMode = kActivityScan;
+    activityClient = -1;
+  }
   showFocus(static_cast<uint8_t>((optionSlot(focusIndex) + 1) % kOptionCount));
   broadcastFocus(focusIndex);
   speakPort(focusIndex, settings.options[focusIndex].label);
@@ -728,7 +744,25 @@ void changeVolume(int8_t delta) {
   }
 }
 
+void serviceActivityHold() {
+  if (activityMode == kActivityScan) {
+    return;
+  }
+  if (static_cast<uint32_t>(millis() - activitySinceMs) < kActivityLimitMs) {
+    return;
+  }
+  activityMode = kActivityScan;
+  activityClient = -1;
+  if (autoScanEnabled()) {
+    armScanTimer();
+  }
+  broadcastFocus(focusIndex);
+}
+
 void serviceAutoScan() {
+  if (activityMode != kActivityScan) {
+    return;
+  }
   if (!autoScanEnabled()) {
     scanTimerArmed = false;
     return;
@@ -754,6 +788,20 @@ void handleInputs() {
   }
   if (pressed[kInputVolumeDown]) {
     changeVolume(-1);
+  }
+  if (activityMode == kActivityPlay) {
+    if (pressed[kInputDevice]) {
+      broadcastInteract(focusIndex);
+    }
+    for (uint8_t i = 0; i < kOptionCount; i++) {
+      if (pressed[i]) {
+        broadcastSwitch(i);
+      }
+    }
+    if (pressed[kInputScan]) {
+      broadcastScan();
+    }
+    return;
   }
   if (pressed[kInputDevice]) {
     broadcastInteract(focusIndex);
@@ -813,6 +861,8 @@ bool storeConfigJson(const char *json, size_t length) {
     ss.setVolume(settings.volume);
   }
   driveRings();
+  activityMode = kActivityScan;
+  activityClient = -1;
   if (autoScanEnabled()) {
     armScanTimer();
   } else {
@@ -838,9 +888,55 @@ void deviceBegin() {
   speakPort(focusIndex, settings.options[focusIndex].label);
 }
 
+static void browserBeginActivity(uint8_t mode, uint8_t clientNum) {
+  activityMode = mode;
+  activityClient = static_cast<int8_t>(clientNum);
+  activitySinceMs = millis();
+  scanTimerArmed = false;
+}
+
+void browserHold(uint8_t clientNum) {
+  browserBeginActivity(kActivityHold, clientNum);
+}
+
+void browserPlay(uint8_t clientNum) {
+  browserBeginActivity(kActivityPlay, clientNum);
+}
+
+void browserResume(uint8_t clientNum) {
+  if (activityMode == kActivityScan) {
+    return;
+  }
+  if (activityClient != static_cast<int8_t>(clientNum)) {
+    return;
+  }
+  activityMode = kActivityScan;
+  activityClient = -1;
+  if (autoScanEnabled()) {
+    armScanTimer();
+  } else {
+    scanTimerArmed = false;
+  }
+}
+
+void browserClientLeft(uint8_t clientNum) {
+  if (activityClient != static_cast<int8_t>(clientNum)) {
+    return;
+  }
+  activityMode = kActivityScan;
+  activityClient = -1;
+  if (autoScanEnabled()) {
+    armScanTimer();
+  } else {
+    scanTimerArmed = false;
+  }
+  broadcastFocus(focusIndex);
+}
+
 void deviceLoop() {
   serviceRelay();
   handleInputs();
+  serviceActivityHold();
   serviceAutoScan();
   serviceRelay();
 }

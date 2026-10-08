@@ -124,6 +124,11 @@ button.secondary {
   color: #111111;
 }
 
+button.secondary.picked {
+  background: #111111;
+  color: #ffffff;
+}
+
 .row,
 .swatches {
   display: flex;

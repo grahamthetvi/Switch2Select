@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Chase</title>
+  <link rel="stylesheet" href="/games/common.css">
+  <style>
+    .home,
+    #ball {
+      position: absolute;
+      transform: translate(-50%, -50%);
+    }
+
+    .home {
+      width: 22vmin;
+      height: 22vmin;
+      margin: 0;
+      border-radius: 50%;
+      opacity: 0.95;
+    }
+
+    .home.lit {
+      box-shadow: 0 0 0 1.2vmin #ffffff, 0 0 0 2.3vmin #ff0000;
+    }
+
+    .home.hit {
+      animation: home-pop 0.32s ease-out;
+    }
+
+    #ball {
+      z-index: 2;
+      width: 28vmin;
+      height: 28vmin;
+      left: 50%;
+      top: 46%;
+      transition: left 1.2s ease-in-out, top 1.2s ease-in-out;
+    }
+
+    #ball.fast {
+      transition-duration: 0.32s, 0.32s;
+    }
+
+    #face {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: #ffff00;
+      box-shadow: 0 0 0 1.15vmin #ff0000, 0 0 0 2.2vmin #ffffff;
+      animation: wobble 1.4s ease-in-out infinite;
+    }
+
+    @keyframes wobble {
+      0%,
+      100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-3.5vmin) scale(1.08); }
+    }
+
+    @keyframes home-pop {
+      0% { transform: translate(-50%, -50%) scale(1); }
+      40% { transform: translate(-50%, -50%) scale(1.28); }
+      100% { transform: translate(-50%, -50%) scale(1); }
+    }
+  </style>
+</head>
+<body data-place="0">
+  <div class="home" data-index="0"></div>
+  <div class="home" data-index="1"></div>
+  <div class="home" data-index="2"></div>
+  <div class="home" data-index="3"></div>
+  <div id="ball"><div id="face"></div></div>
+  <script src="/www/switch2select.js"></script>
+  <script>
+    (function () {
+      var homes = document.querySelectorAll(".home");
+      var ball = document.getElementById("ball");
+      var colors = ["#ffff00", "#ff2a2a", "#ffffff", "#ffb000"];
+      var tones = [330, 392, 494, 587];
+      var spots = [
+        { left: "18%", top: "64%" },
+        { left: "40%", top: "32%" },
+        { left: "62%", top: "70%" },
+        { left: "84%", top: "36%" }
+      ];
+      var place = 0;
+      var tour = 0;
+
+      homes.forEach(function (home, index) {
+        home.style.left = spots[index].left;
+        home.style.top = spots[index].top;
+        home.style.background = colors[index];
+        home.style.boxShadow = "0 0 0 0.7vmin " + (colors[index] === "#ff2a2a" ? "#ffff00" : "#ff0000");
+      });
+
+      function light(index) {
+        var i;
+        for (i = 0; i < homes.length; i += 1) {
+          if (i === index) homes[i].classList.add("lit");
+          else homes[i].classList.remove("lit");
+        }
+      }
+
+      function go(index, tapped) {
+        place = index;
+        document.body.setAttribute("data-place", String(place));
+        light(place);
+        ball.classList.toggle("fast", !!tapped);
+        ball.style.left = spots[place].left;
+        ball.style.top = spots[place].top;
+        var home = homes[place];
+        home.classList.remove("hit");
+        void home.offsetWidth;
+        home.classList.add("hit");
+        if (tapped && window.Switch2Select) Switch2Select.tone(tones[place], 180);
+        if (tour) window.clearInterval(tour);
+        tour = window.setInterval(function () {
+          go((place + 1) % 4, false);
+        }, 2800);
+      }
+
+      document.body.addEventListener("click", function (event) {
+        if (!window.Switch2Select) return;
+        if (event.target.closest && event.target.closest("#s2s-demo")) return;
+        go(Switch2Select.column(event), true);
+      });
+
+      if (window.Switch2Select) {
+        Switch2Select.onSwitch(function (message) {
+          var index = message && message.index;
+          if (index !== 0 && index !== 1 && index !== 2 && index !== 3) return;
+          go(index, true);
+        });
+        Switch2Select.onScan(function () {
+          go((place + 1) % 4, true);
+        });
+      }
+
+      go(0, false);
+    })();
+  </script>
+</body>
+</html>

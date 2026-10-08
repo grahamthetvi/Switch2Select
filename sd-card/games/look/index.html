@@ -2,64 +2,133 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Look</title>
+  <link rel="stylesheet" href="/games/common.css">
   <style>
-    html, body {
-      margin: 0;
-      height: 100%;
-      background: #000000;
-      overflow: hidden;
-    }
-
-    #target {
+    #mover {
       position: absolute;
       left: 50%;
-      top: 50%;
-      background: #ffff00;
+      top: 46%;
+      width: 50vmin;
+      height: 50vmin;
       transform: translate(-50%, -50%);
+      transition: left 0.34s ease-out, top 0.34s ease-out, width 0.25s ease-out, height 0.25s ease-out;
     }
 
-    #target.circle-small {
-      width: 42vmin;
-      height: 42vmin;
+    #shape {
+      width: 100%;
+      height: 100%;
+      background: #ffff00;
       border-radius: 50%;
+      box-shadow: 0 0 0 1.15vmin #ff0000;
+      animation: float 2.6s ease-in-out infinite;
     }
 
-    #target.square {
-      width: 70vmin;
-      height: 70vmin;
-      border-radius: 0;
+    #shape.pop {
+      animation: pop 0.38s ease-out;
     }
 
-    #target.circle-large {
-      width: 90vmin;
-      height: 90vmin;
-      border-radius: 50%;
+    #spin {
+      width: 100%;
+      height: 100%;
+    }
+
+    #spin.diamond {
+      transform: rotate(45deg);
+    }
+
+    #shape.square,
+    #shape.diamond {
+      border-radius: 12%;
+    }
+
+    #shape.ring {
+      background: transparent;
+    }
+
+    @keyframes float {
+      0%,
+      100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-5vmin) scale(1.07); }
+    }
+
+    @keyframes pop {
+      0% { transform: scale(0.62); }
+      45% { transform: scale(1.22); }
+      100% { transform: translateY(0) scale(1); }
     }
   </style>
 </head>
 <body>
-  <div id="target" class="circle-small"></div>
+  <div id="mover" data-place="">
+    <div id="spin">
+      <div id="shape" class="circle"></div>
+    </div>
+  </div>
   <script src="/www/switch2select.js"></script>
   <script>
     (function () {
-      var target = document.getElementById("target");
-      var shapes = ["circle-small", "square", "circle-large"];
-      var step = 0;
+      var mover = document.getElementById("mover");
+      var spin = document.getElementById("spin");
+      var shape = document.getElementById("shape");
+      var forms = ["circle", "square", "diamond", "ring"];
+      var colors = ["#ffff00", "#ff2a2a", "#ffffff", "#ffb000"];
+      var tones = [392, 440, 494, 523];
+      var spots = [
+        { left: "24%", top: "62%" },
+        { left: "42%", top: "38%" },
+        { left: "58%", top: "64%" },
+        { left: "76%", top: "40%" }
+      ];
+      var sizes = ["50vmin", "46vmin", "44vmin", "56vmin"];
+      var lane = 0;
+      var form = 0;
 
-      function showShape() {
-        target.className = shapes[step % shapes.length];
+      function paint(index, fromScan) {
+        if (fromScan) lane = (lane + 1) % 4;
+        else lane = index;
+        form = (form + 1) % forms.length;
+        var color = colors[lane];
+        shape.className = forms[form];
+        spin.className = forms[form] === "diamond" ? "diamond" : "";
+        mover.style.left = spots[lane].left;
+        mover.style.top = spots[lane].top;
+        mover.style.width = sizes[form];
+        mover.style.height = sizes[form];
+        mover.setAttribute("data-place", String(lane));
+        if (forms[form] === "ring") {
+          shape.style.background = "transparent";
+          shape.style.boxShadow = "inset 0 0 0 3.4vmin " + color + ", 0 0 0 1.15vmin #ff0000";
+        } else {
+          shape.style.background = color;
+          shape.style.boxShadow = "0 0 0 1.15vmin " + (color === "#ff2a2a" ? "#ffff00" : "#ff0000");
+        }
+        shape.classList.remove("pop");
+        void shape.offsetWidth;
+        shape.classList.add("pop");
+        if (window.Switch2Select) Switch2Select.tone(tones[lane], 170);
       }
 
-      function onSelect() {
-        step += 1;
-        showShape();
-      }
+      shape.addEventListener("animationend", function (event) {
+        if (event.animationName === "pop") shape.classList.remove("pop");
+      });
+
+      document.body.addEventListener("click", function (event) {
+        if (!window.Switch2Select) return;
+        if (event.target.closest && event.target.closest("#s2s-demo")) return;
+        paint(Switch2Select.column(event), false);
+      });
 
       if (window.Switch2Select) {
-        window.Switch2Select.onSelect(onSelect);
-        window.Switch2Select.onInteract(onSelect);
+        Switch2Select.onSwitch(function (message) {
+          var index = message && message.index;
+          if (index !== 0 && index !== 1 && index !== 2 && index !== 3) return;
+          paint(index, false);
+        });
+        Switch2Select.onScan(function () {
+          paint(0, true);
+        });
       }
     })();
   </script>
