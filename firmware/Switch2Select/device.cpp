@@ -35,6 +35,10 @@ namespace {
 constexpr uint8_t kOptionCount = 4;
 constexpr uint8_t kInputCount = 8;
 constexpr uint32_t kDebounceMs = 40;
+// Step mode. Released before this, a scan press selects. Held this long, the
+// highlight starts rotating and the release does not select. 400 ms is under
+// the 500 ms minimum saved scan delay and well under the 3000 ms sample.
+constexpr uint32_t kStepHoldMs = 400;
 constexpr uint32_t kDefaultScanDelayMs = 3000;
 constexpr uint32_t kDefaultPulseMs = 1000;
 constexpr uint8_t kRelayOffSlots = 2;
@@ -66,17 +70,19 @@ struct InputDebounce {
   bool stablePressed;
   bool lastSamplePressed;
   uint32_t lastChangeMs;
+  bool pressEdge;
+  bool releaseEdge;
 };
 
 InputDebounce inputs[kInputCount] = {
-    {PIN_OPTION_0, false, false, false, 0},
-    {PIN_OPTION_1, false, false, false, 0},
-    {PIN_OPTION_2, false, false, false, 0},
-    {PIN_OPTION_3, false, false, false, 0},
-    {PIN_SCAN, true, false, false, 0},
-    {PIN_VOLUME_UP, true, false, false, 0},
-    {PIN_VOLUME_DOWN, true, false, false, 0},
-    {PIN_DEVICE, true, false, false, 0},
+    {PIN_OPTION_0, false, false, false, 0, false, false},
+    {PIN_OPTION_1, false, false, false, 0, false, false},
+    {PIN_OPTION_2, false, false, false, 0, false, false},
+    {PIN_OPTION_3, false, false, false, 0, false, false},
+    {PIN_SCAN, true, false, false, 0, false, false},
+    {PIN_VOLUME_UP, true, false, false, 0, false, false},
+    {PIN_VOLUME_DOWN, true, false, false, 0, false, false},
+    {PIN_DEVICE, true, false, false, 0, false, false},
 };
 
 DynamicJsonDocument configDoc(kConfigCapacity);
@@ -103,6 +109,13 @@ portMUX_TYPE relayMux = portMUX_INITIALIZER_UNLOCKED;
 
 bool scanTimerArmed = false;
 uint32_t scanDueMs = 0;
+
+// Step-mode scan press. Tracking starts on the press. Rotating starts once
+// the hold threshold is reached while the switch is still down.
+bool stepScanTracking = false;
+bool stepScanRotating = false;
+uint32_t stepScanPressedMs = 0;
+uint32_t stepScanAdvanceDueMs = 0;
 
 void setText(char *dest, size_t destSize, const char *text) {
   if (destSize == 0) {
@@ -284,25 +297,35 @@ void beginInputs() {
     inputs[i].stablePressed = pressed;
     inputs[i].lastSamplePressed = pressed;
     inputs[i].lastChangeMs = now;
+    inputs[i].pressEdge = false;
+    inputs[i].releaseEdge = false;
   }
 }
 
-bool pressedEdge(uint8_t index) {
-  InputDebounce &input = inputs[index];
-  const bool pressed = digitalRead(input.pin) == LOW;
+void pollInputs() {
   const uint32_t now = millis();
-  if (pressed != input.lastSamplePressed) {
-    input.lastSamplePressed = pressed;
-    input.lastChangeMs = now;
+  for (uint8_t i = 0; i < kInputCount; i++) {
+    InputDebounce &input = inputs[i];
+    input.pressEdge = false;
+    input.releaseEdge = false;
+    const bool pressed = digitalRead(input.pin) == LOW;
+    if (pressed != input.lastSamplePressed) {
+      input.lastSamplePressed = pressed;
+      input.lastChangeMs = now;
+    }
+    if (pressed == input.stablePressed) {
+      continue;
+    }
+    if ((now - input.lastChangeMs) < kDebounceMs) {
+      continue;
+    }
+    input.stablePressed = pressed;
+    if (pressed) {
+      input.pressEdge = true;
+    } else {
+      input.releaseEdge = true;
+    }
   }
-  if (pressed == input.stablePressed) {
-    return false;
-  }
-  if ((now - input.lastChangeMs) < kDebounceMs) {
-    return false;
-  }
-  input.stablePressed = pressed;
-  return pressed;
 }
 
 void serviceRelay() {
@@ -743,36 +766,83 @@ void serviceAutoScan() {
   advanceFocus();
 }
 
-void handleInputs() {
-  bool pressed[kInputCount];
-  for (uint8_t i = 0; i < kInputCount; i++) {
-    pressed[i] = pressedEdge(i);
+void resetStepScan() {
+  stepScanTracking = false;
+  stepScanRotating = false;
+}
+
+void advanceStepScan() {
+  stepScanRotating = true;
+  advanceFocus();
+  stepScanAdvanceDueMs = millis() + settings.scanDelayMs;
+}
+
+// Auto: a scan press selects the lit option. Step: a tap selects, a hold rotates.
+void handleScanSwitch() {
+  InputDebounce &scan = inputs[kInputScan];
+  if (autoScanEnabled()) {
+    resetStepScan();
+    if (scan.pressEdge) {
+      selectOption(focusIndex);
+    }
+    return;
   }
 
-  if (pressed[kInputVolumeUp]) {
+  const uint32_t now = millis();
+  if (scan.pressEdge) {
+    stepScanTracking = true;
+    stepScanRotating = false;
+    stepScanPressedMs = now;
+  }
+
+  const bool holdReached =
+      stepScanTracking &&
+      static_cast<int32_t>(now - stepScanPressedMs) >= static_cast<int32_t>(kStepHoldMs);
+
+  if (scan.releaseEdge && stepScanTracking) {
+    const bool tap = !stepScanRotating && !holdReached;
+    resetStepScan();
+    if (tap) {
+      selectOption(focusIndex);
+    }
+    return;
+  }
+
+  if (!stepScanTracking || scan.releaseEdge) {
+    return;
+  }
+  if (!stepScanRotating) {
+    if (holdReached) {
+      advanceStepScan();
+    }
+    return;
+  }
+  if (static_cast<int32_t>(now - stepScanAdvanceDueMs) >= 0) {
+    advanceStepScan();
+  }
+}
+
+void handleInputs() {
+  pollInputs();
+
+  if (inputs[kInputVolumeUp].pressEdge) {
     changeVolume(1);
   }
-  if (pressed[kInputVolumeDown]) {
+  if (inputs[kInputVolumeDown].pressEdge) {
     changeVolume(-1);
   }
-  if (pressed[kInputDevice]) {
+  if (inputs[kInputDevice].pressEdge) {
     broadcastInteract(focusIndex);
     speakPort(focusIndex, settings.options[focusIndex].label);
   }
 
   for (uint8_t i = 0; i < kOptionCount; i++) {
-    if (pressed[i]) {
+    if (inputs[i].pressEdge) {
       selectOption(i);
     }
   }
 
-  if (pressed[kInputScan]) {
-    if (autoScanEnabled()) {
-      selectOption(focusIndex);
-    } else {
-      advanceFocus();
-    }
-  }
+  handleScanSwitch();
 }
 
 }  // namespace
@@ -813,6 +883,7 @@ bool storeConfigJson(const char *json, size_t length) {
     ss.setVolume(settings.volume);
   }
   driveRings();
+  resetStepScan();
   if (autoScanEnabled()) {
     armScanTimer();
   } else {
@@ -830,6 +901,7 @@ void deviceBegin() {
   loadConfig();
   beginRings();
   beginSpeech();
+  resetStepScan();
   if (autoScanEnabled()) {
     armScanTimer();
   } else {

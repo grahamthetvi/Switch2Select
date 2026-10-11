@@ -47,6 +47,12 @@ stand_bolt_y = 94;
 stand_bolt_xs = [28, 64, 136, 172];
 m3_clear = 3.4;
 m3_pilot = 2.8;
+// Lid corner screws. Same centers as the bosses in switch2select.scad.
+// The head hole lets an M3 socket or pan head sit on the lid. The well is
+// wider so the screw can be started where the plate covers the cap.
+lid_screw_inset = 8;
+lid_screw_head = 6.2;
+lid_screw_well = 12;
 ring_port_x = 114;
 ring_port_y = 96;
 ring_port_w = 12;
@@ -97,6 +103,14 @@ module m3_hole(h) {
   cylinder(h = h, d = m3_clear, $fn = 32);
 }
 
+module lid_screw_head(h) {
+  cylinder(h = h, d = lid_screw_head, $fn = 32);
+}
+
+module lid_screw_well(h) {
+  cylinder(h = h, d = lid_screw_well, $fn = 48);
+}
+
 module pilot_hole(h) {
   cylinder(h = h, d = m3_pilot, $fn = 28);
 }
@@ -118,7 +132,7 @@ module stand_cap() {
         cube([16, 36, cap_t]);
       translate([box_x - 16, box_y, 0])
         cube([16, 36, cap_t]);
-      translate([6, 4, cap_t - 0.4])
+      translate([14, 4, cap_t - 0.4])
         linear_extrude(1.1)
           text("FRONT", size = 5, font = label_font, halign = "left");
     }
@@ -128,6 +142,10 @@ module stand_cap() {
     for (x = stand_bolt_xs)
       translate([x, stand_bolt_y, -1])
         m3_hole(cap_t + 2);
+    for (x = [lid_screw_inset, box_x - lid_screw_inset])
+      for (y = [lid_screw_inset, box_y - lid_screw_inset])
+        translate([x, y, -1])
+          lid_screw_head(cap_t + 2);
     translate([8, 158, -1])
       m3_hole(cap_t + 2);
     translate([box_x - 8, 158, -1])
@@ -196,6 +214,11 @@ module center_plate() {
     for (x = stand_bolt_xs)
       translate([x, stand_bolt_y, -1])
         m3_hole(foot_t + 2);
+    // Partner-wall lid screws sit under this foot. The student-wall pair
+    // is only under the cap.
+    for (x = [lid_screw_inset, box_x - lid_screw_inset])
+      translate([x, box_y - lid_screw_inset, -1])
+        lid_screw_well(foot_t + 2);
     cable_port_cut();
     translate([
       ring_port_x - ring_port_w / 2,
@@ -229,6 +252,9 @@ module extension_left() {
     for (y = [100, 112])
       translate([10, y, foot_t - lap_t - 1])
         m3_hole(lap_t + 2);
+    // The lap covers the partner-wall lid screw at this end of the foot.
+    translate([lid_screw_inset, box_y - lid_screw_inset, foot_t - lap_t - 1])
+      lid_screw_well(lap_t + 2);
   }
 }
 
@@ -442,6 +468,19 @@ assert(slot_h >= card_h, "card slot must accept the card height");
 assert(card_panel_w() + 40 < ledge_x1() - ledge_x0(), "ledge must hold the card panel and both rails");
 assert(281.6 + 40 < ledge_x1() - ledge_x0(), "ledge must hold a 13 inch iPad and both rails");
 assert(foot_y0 <= stand_bolt_y - 4, "foot must surround the stand bolts");
+assert(
+  lid_screw_inset - lid_screw_well / 2 >= 1.5,
+  "lid screw well must stay inside the foot"
+);
+assert(
+  box_y - lid_screw_inset - lid_screw_well / 2 > foot_y0,
+  "partner lid screw well must land in the foot"
+);
+assert(
+  lid_screw_inset + lid_screw_well / 2 < foot_y0,
+  "student lid screws stay clear of the foot"
+);
+assert(lid_screw_head >= 6.0 && lid_screw_head <= 6.6, "lid screw hole must pass an M3 head");
 assert(hinge_y > stand_bolt_y + 16, "hinge must stay behind the stand bolts");
 assert(panel_z < channel_d, "card panel must sit in the device channel");
 assert(half_w() < 220, "a card half must fit a 220 mm bed");

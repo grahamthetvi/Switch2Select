@@ -9,13 +9,16 @@ part = "both"; // [bottom, lid, both]
 
 // Assembled outside size. The lid skin sits on the bottom rim.
 outer_x = 200;
-// Opposing cradles, cord exits, and wrap stems clear at this depth, with
-// room between them for the ESP32, relay module, and speech module.
+// Opposing cradles and cord exits clear at this depth, with room between
+// them for the ESP32, relay module, and speech module.
 outer_y = 140;
 outer_z = 55;
 wall = 2.4;
 // Outside vertical corners. Flat faces keep the full outside size.
 corner_r = 6;
+// Outside bottom edges. Same 2 mm as the long edges of the simple stand.
+// Kept under the wall thickness so the floor and the sides stay flat above it.
+bottom_edge_r = 2;
 
 floor_t = wall;
 lid_t = wall;
@@ -25,20 +28,34 @@ bottom_z = outer_z - lid_t;
 fit_gap = 0.4;
 lip_t = 2;
 lip_h = 4;
+// Outside bevel on the free edge, so the lip finds the opening.
+lip_lead = 0.8;
 layout_gap = 20;
 
 // Corner bosses in the bottom; M3 clearance holes in the lid.
+// The post is only the pilot plus a short blind floor. Below that it slopes
+// into the corner walls instead of standing on the floor. The lid screws
+// load the threads; the two walls hold the post.
 m3_clear = 3.4;
 m3_tap = 2.8;
 boss_od = 12;
 boss_inset = 8;
 pilot_depth = 10;
-boss_top_gap = 0.15;
+// Below the rim, so the lid sits on the wall. A 0.2 mm layer cannot close it.
+boss_top_gap = 0.4;
+boss_floor = 2;
+// Runout into the corner. Long enough that the underside stays within
+// 45 degrees of vertical, so it prints without support.
+boss_run = 16;
+// Buried in the corner wall. The bridge from the post to this nub closes
+// the gap between the post and the inner fillet.
+nub_d = 1.6;
 
 // 3.5 mm jacks push in through a 9.1 mm hole. The cradle is a hair larger
 // and as deep as the jack cylinder. A shoulder stops the cylinder. The
-// cord leaves through that shoulder. A round cord binds in a hole of its
-// own width, so the passage is 0.4 mm larger and no more.
+// cord leaves through that shoulder. The passage is open at the top so the
+// lead drops in. A round cord binds in a passage of its own width, so the
+// opening is 0.4 mm larger and no more.
 jack_d = 9.1;
 jack_cradle_clear = 0.4;
 jack_body_len = 27.3;
@@ -62,10 +79,15 @@ rocker_body_d = 20.5;
 rocker_depth = 25.4;
 rocker_clear_d = rocker_body_d + 7.5;
 
-usb_w = 12;
+// USB-C plug body is 12.35 mm wide at the spec maximum.
+usb_w = 13.2;
 usb_h = 8;
-sd_w = 16;
-sd_h = 3;
+// Printed wall between the power opening and a raised mark.
+usb_clear = 2;
+// Center of the power opening above the outside bottom.
+usb_z = 18.5;
+// Centered on the short wall at the numeral 1 end (the face at x = 0).
+usb_y = outer_y / 2;
 
 option_count = 4;
 jack_margin = 40;
@@ -74,14 +96,9 @@ scan_z = 16;
 toy_z = 40;
 control_z = 16;
 
-// Partner wall, left to right when facing that wall:
-// minus, plus, device, rocker, USB, microSD.
-minus_x = 170;
-plus_x = 140;
-device_x = 122;
-rocker_x = 100;
-usb_x = 64;
-sd_x = 32;
+// Rocker stays on the partner wall. It sits past numeral 1 because the
+// three jack gaps are the volume and device buttons.
+rocker_x = 22;
 
 // Stand bolts through the lid. enclosure/stand.scad uses these same centers.
 stand_bolt_y = 94;
@@ -93,13 +110,11 @@ ring_port_y = 96;
 ring_port_w = 12;
 ring_port_h = 10;
 
-// Cord stem, inboard of each jack, fused to the floor.
-stem_d = 5;
-stem_head_d = 7.4;
-stem_flare_h = 1.6;
-stem_dx = 14;
-stem_side_gap = 1.5;
-stem_above = 2;
+// Hole across the cradle, just under the jack. 4 mm clears a small zip tie.
+// The center sits less than a radius below the seat, so the hole opens
+// into the channel and the tie can loop the jack body.
+zip_d = 4;
+zip_seat_drop = 0.6;
 
 raise_h = 0.8;
 raise_sink = 0.2;
@@ -143,8 +158,35 @@ braille_cell_h = 2 * braille_dot_spacing + braille_dot_d;
 function option_x(i) =
   jack_margin + i * (outer_x - 2 * jack_margin) / (option_count - 1);
 
+// One button in each gap. Facing the partner wall, left to right is
+// minus, plus, device: between jacks 4-3, 3-2, and 2-1.
+minus_x = (option_x(3) + option_x(2)) / 2;
+plus_x = (option_x(2) + option_x(1)) / 2;
+device_x = (option_x(1) + option_x(0)) / 2;
+
 function corner_x(i) = (i == 1 || i == 3) ? outer_x - boss_inset : boss_inset;
 function corner_y(i) = (i >= 2) ? outer_y - boss_inset : boss_inset;
+
+function boss_straight_z() =
+  bottom_z - boss_top_gap - pilot_depth - boss_floor;
+
+// Mid-wall on the diagonal, inside the outer skin and past the inner fillet.
+function corner_nub_reach() = corner_r - wall / 2;
+
+function corner_nub_xy(i) = [
+  (corner_x(i) < outer_x / 2 ? corner_r : outer_x - corner_r)
+    + (corner_x(i) < outer_x / 2 ? -1 : 1) * corner_nub_reach() / sqrt(2),
+  (corner_y(i) < outer_y / 2 ? corner_r : outer_y - corner_r)
+    + (corner_y(i) < outer_y / 2 ? -1 : 1) * corner_nub_reach() / sqrt(2)
+];
+
+// From the nub to the far side of the post. The runout has to be at least this
+// long or the underside overhangs past 45 degrees.
+function boss_far() =
+  sqrt(
+    pow(corner_x(0) - corner_nub_xy(0)[0], 2)
+    + pow(corner_y(0) - corner_nub_xy(0)[1], 2)
+  ) + boss_od / 2;
 
 function dot_offset(d) = [
   d > 3 ? braille_dot_spacing : 0,
@@ -158,15 +200,18 @@ function word_w(n) = (n - 1) * braille_cell_spacing + braille_dot_spacing + brai
 function partner_word_x(center_x, n) =
   center_x + (word_w(n) - braille_dot_d) / 2;
 
-// Stem axis is past the cord exit and stem_dx off the jack axis, so the
-// lead can wrap after it leaves the cylinder without closing the passage.
-function student_stem_y() =
-  wall + jack_body_len + jack_stop_t + stem_side_gap + stem_d / 2;
+// "power" in label_font at numeral_size. Advance width of Liberation Sans Bold.
+power_text_w = 17.7;
+// Above the power opening on the numeral 1 short wall.
+usb_top = usb_z + usb_h / 2;
+power_text_y = usb_y;
+power_text_z = usb_top + usb_clear + numeral_size / 2;
 
-function partner_stem_y() = min(
-  outer_y - wall - jack_body_len - jack_stop_t - stem_side_gap - stem_d / 2,
-  outer_y - rocker_depth - stem_side_gap - stem_d / 2
-);
+// Grade 1 "power" above those letters. Origin is dot 1 of the first cell.
+// Facing this wall from outside, the word reads toward -Y.
+power_braille_y = usb_y + (word_w(5) - braille_dot_d) / 2;
+power_braille_z = power_text_z + numeral_size / 2 + usb_clear + braille_dot_r
+  + 2 * braille_dot_spacing;
 
 module rounded_prism(size, r) {
   hull() {
@@ -175,6 +220,48 @@ module rounded_prism(size, r) {
         translate([x, y, 0])
           cylinder(h = size[2], r = r, $fn = 64);
   }
+}
+
+// Quarter torus for one bottom corner. Starts along +X and sweeps toward +Y.
+module bottom_corner_torus(r_major, r_minor) {
+  rotate_extrude(angle = 90, $fn = 64)
+    translate([r_major, 0])
+      circle(r = r_minor, $fn = 32);
+}
+
+// Vertical corners stay at corner_r. The bottom edge is a smaller radius,
+// and the top face stays flat for the lid.
+module rounded_bottom_prism(size, corner_r, edge_r) {
+  cr = corner_r;
+  er = edge_r;
+  overlap = 0.02;
+  translate([0, 0, er - overlap])
+    rounded_prism([size[0], size[1], size[2] - er + overlap], cr);
+  translate([er, er, 0])
+    rounded_prism([size[0] - 2 * er, size[1] - 2 * er, er + overlap], cr - er);
+  translate([cr - overlap, er, er])
+    rotate([0, 90, 0])
+      cylinder(h = size[0] - 2 * cr + 2 * overlap, r = er, $fn = 64);
+  translate([cr - overlap, size[1] - er, er])
+    rotate([0, 90, 0])
+      cylinder(h = size[0] - 2 * cr + 2 * overlap, r = er, $fn = 64);
+  translate([er, cr - overlap, er])
+    rotate([-90, 0, 0])
+      cylinder(h = size[1] - 2 * cr + 2 * overlap, r = er, $fn = 64);
+  translate([size[0] - er, cr - overlap, er])
+    rotate([-90, 0, 0])
+      cylinder(h = size[1] - 2 * cr + 2 * overlap, r = er, $fn = 64);
+  translate([cr, cr, er])
+    rotate([0, 0, 180])
+      bottom_corner_torus(cr - er, er);
+  translate([size[0] - cr, cr, er])
+    rotate([0, 0, -90])
+      bottom_corner_torus(cr - er, er);
+  translate([cr, size[1] - cr, er])
+    rotate([0, 0, 90])
+      bottom_corner_torus(cr - er, er);
+  translate([size[0] - cr, size[1] - cr, er])
+    bottom_corner_torus(cr - er, er);
 }
 
 module hole_y(x, z, d, y0, depth) {
@@ -186,6 +273,12 @@ module hole_y(x, z, d, y0, depth) {
 module slot_y(x, z, w, h, y0, depth) {
   translate([x - w / 2, y0, z - h / 2])
     cube([w, depth, h]);
+}
+
+// w runs along Y. The numeral 1 end is the face at x = 0.
+module slot_x(y, z, w, h, x0, depth) {
+  translate([x0, y - w / 2, z - h / 2])
+    cube([depth, w, h]);
 }
 
 module student_cutouts() {
@@ -203,11 +296,16 @@ module partner_cutouts() {
   hole_y(plus_x, control_z, button_d, y0, depth);
   hole_y(device_x, control_z, button_d, y0, depth);
   hole_y(rocker_x, control_z, rocker_d, y0, depth);
-  slot_y(usb_x, control_z, usb_w, usb_h, y0, depth);
-  slot_y(sd_x, control_z, sd_w, sd_h, y0, depth);
+}
+
+// Power lead on the short wall at the numeral 1 end. No microSD slot.
+module end_cutouts() {
+  slot_x(usb_y, usb_z, usb_w, usb_h, -1, wall + 2);
 }
 
 // U cradle opening upward. The back is a shoulder around the cord passage.
+// The passage is open above the cord so the lead drops in. The jack is
+// wider than that opening, so the shoulder still stops the cylinder.
 // inward is +1 on the student wall and -1 on the partner wall.
 module jack_cradle(x, z, y_inner, inward) {
   id = jack_id;
@@ -232,6 +330,8 @@ module jack_cradle(x, z, y_inner, inward) {
     translate([x, ys_a - 0.4, z])
       rotate([-90, 0, 0])
         cylinder(h = ys_b - ys_a + 0.8, d = cord_hole_d, $fn = 48);
+    translate([x - cord_hole_d / 2, ys_a - 0.4, z])
+      cube([cord_hole_d, ys_b - ys_a + 0.8, id / 2 + t + 1]);
   }
 }
 
@@ -247,12 +347,14 @@ module jack_buttress(x, z, y_inner, inward) {
       cube([jack_outer_w, y_b - y_a, top]);
 }
 
-module cord_stem(x, y, z_top) {
-  translate([x, y, 0]) {
-    cylinder(h = z_top, d = stem_d, $fn = 32);
-    translate([0, 0, z_top])
-      cylinder(h = stem_flare_h, d1 = stem_d, d2 = stem_head_d, $fn = 32);
-  }
+// Across the cradle (along X), so the tie crosses the plug axis (Y).
+// The top of the hole breaks into the channel and the tie loops the jack.
+module jack_zip_cut(x, z, y_inner, inward) {
+  seat = z - jack_id / 2;
+  y_mid = y_inner + inward * (jack_body_len / 2);
+  translate([x - jack_outer_w / 2 - 0.8, y_mid, seat - zip_seat_drop])
+    rotate([0, 90, 0])
+      cylinder(h = jack_outer_w + 1.6, d = zip_d, $fn = 24);
 }
 
 module rocker_keepout() {
@@ -261,20 +363,23 @@ module rocker_keepout() {
       cylinder(h = rocker_depth - wall, d = rocker_clear_d, $fn = 64);
 }
 
-function input_stem_x(i) = option_x(i) + (i < 2 ? -stem_dx : stem_dx);
-
 module student_jack_hardware() {
-  for (i = [0:option_count - 1]) {
-    jack_cradle(option_x(i), input_z, wall, 1);
-    jack_buttress(option_x(i), input_z, wall, 1);
-    cord_stem(input_stem_x(i), student_stem_y(), input_z + stem_above);
+  difference() {
+    union() {
+      for (i = [0:option_count - 1]) {
+        jack_cradle(option_x(i), input_z, wall, 1);
+        jack_buttress(option_x(i), input_z, wall, 1);
+      }
+      jack_cradle(outer_x / 2, scan_z, wall, 1);
+      jack_buttress(outer_x / 2, scan_z, wall, 1);
+    }
+    for (i = [0:option_count - 1])
+      jack_zip_cut(option_x(i), input_z, wall, 1);
+    jack_zip_cut(outer_x / 2, scan_z, wall, 1);
   }
-  jack_cradle(outer_x / 2, scan_z, wall, 1);
-  jack_buttress(outer_x / 2, scan_z, wall, 1);
-  cord_stem(outer_x / 2 + stem_dx, student_stem_y(), scan_z + stem_above);
 }
 
-// Keep the rocker body, snap wings, button holes, and cable slots clear.
+// Keep the rocker body, snap wings, and button holes clear.
 module partner_service_clearance() {
   rocker_keepout();
   y_hit = outer_y - wall - button_back_gap;
@@ -293,10 +398,6 @@ module partner_service_clearance() {
   for (bx = [minus_x, plus_x, device_x])
     translate([bx - half_w, y_bar - fit_gap, 0])
       cube([2 * half_w, outer_y - y_bar + 1, plate_top + fit_gap]);
-  translate([usb_x - (usb_w + 4) / 2, outer_y - wall - 30, control_z - (usb_h + 4) / 2])
-    cube([usb_w + 4, 34, usb_h + 4]);
-  translate([sd_x - (sd_w + 4) / 2, outer_y - wall - 30, control_z - (sd_h + 6) / 2])
-    cube([sd_w + 4, 34, sd_h + 6]);
 }
 
 module partner_jack_hardware() {
@@ -305,14 +406,11 @@ module partner_jack_hardware() {
       for (i = [0:option_count - 1]) {
         jack_cradle(option_x(i), toy_z, outer_y - wall, -1);
         jack_buttress(option_x(i), toy_z, outer_y - wall, -1);
-        cord_stem(
-          option_x(i) + stem_dx,
-          partner_stem_y(),
-          toy_z + stem_above
-        );
       }
     }
     partner_service_clearance();
+    for (i = [0:option_count - 1])
+      jack_zip_cut(option_x(i), toy_z, outer_y - wall, -1);
   }
 }
 
@@ -342,9 +440,26 @@ module button_backing(x, z) {
 }
 
 module corner_bosses() {
-  for (i = [0:3])
-    translate([corner_x(i), corner_y(i), 0])
-      cylinder(h = bottom_z - boss_top_gap, d = boss_od, $fn = 64);
+  z0 = boss_straight_z();
+  h = pilot_depth + boss_floor;
+  for (i = [0:3]) {
+    nx = corner_nub_xy(i)[0];
+    ny = corner_nub_xy(i)[1];
+    hull() {
+      translate([corner_x(i), corner_y(i), z0])
+        cylinder(h = h, d = boss_od, $fn = 64);
+      translate([nx, ny, z0])
+        cylinder(h = h, d = nub_d, $fn = 24);
+    }
+    hull() {
+      translate([corner_x(i), corner_y(i), z0])
+        cylinder(h = 0.2, d = boss_od, $fn = 64);
+      translate([nx, ny, z0])
+        cylinder(h = 0.2, d = nub_d, $fn = 24);
+      translate([nx, ny, z0 - boss_run])
+        cylinder(h = 0.2, d = nub_d, $fn = 24);
+    }
+  }
 }
 
 module corner_pilots() {
@@ -362,6 +477,15 @@ module glyph_student(x, z, label, size) {
     rotate([90, 0, 0])
       linear_extrude(height = raise_total)
         text(label, size = size, font = label_font, halign = "center", valign = "center");
+}
+
+// Outside face at x = 0. Facing that wall, the word reads toward -Y.
+module glyph_end(y, z, label, size) {
+  translate([raise_sink, y, z])
+    rotate([0, 0, -90])
+      rotate([90, 0, 0])
+        linear_extrude(height = raise_total)
+          text(label, size = size, font = label_font, halign = "center", valign = "center");
 }
 
 module glyph_partner(x, z, label, size) {
@@ -411,6 +535,15 @@ module student_dot(x, z) {
       braille_dot();
 }
 
+// Outside face at x = 0. Same construction as the student wall, turned so
+// the dots leave through that face.
+module end_dot(y, z) {
+  translate([braille_embed, y, z])
+    rotate([0, 0, -90])
+      rotate([90, 0, 0])
+        braille_dot();
+}
+
 module partner_dot(x, z) {
   translate([x, outer_y - braille_embed, z])
     rotate([-90, 0, 0])
@@ -431,6 +564,16 @@ module partner_braille(origin_x, origin_z, cells) {
     for (d = cells[ci])
       partner_dot(
         origin_x - ci * braille_cell_spacing - dot_offset(d)[0],
+        origin_z + dot_offset(d)[1]
+      );
+}
+
+// Facing the numeral 1 end from outside, cells run toward -Y.
+module end_braille(origin_y, origin_z, cells) {
+  for (ci = [0:len(cells) - 1])
+    for (d = cells[ci])
+      end_dot(
+        origin_y - ci * braille_cell_spacing - dot_offset(d)[0],
         origin_z + dot_offset(d)[1]
       );
 }
@@ -494,9 +637,9 @@ module partner_marks() {
   device_mark(device_x, button_mark_z);
 
   low_z = control_z - button_d / 2 - braille_gap - braille_dot_r;
-  partner_braille(partner_word_x(178, 5), low_z, word_minus);
+  partner_braille(partner_word_x(minus_x, 5), low_z, word_minus);
   partner_braille(partner_word_x(plus_x, 4), low_z, word_plus);
-  partner_braille(partner_word_x(118, 3), low_z, word_use);
+  partner_braille(partner_word_x(device_x, 3), low_z, word_use);
 
   rocker_top = control_z + rocker_d / 2;
   jack_bottom = toy_z - jack_d / 2;
@@ -505,11 +648,16 @@ module partner_marks() {
   partner_braille(partner_word_x(rocker_x, 5), power_z, word_power);
 }
 
+module end_marks() {
+  glyph_end(power_text_y, power_text_z, "power", numeral_size);
+  end_braille(power_braille_y, power_braille_z, word_power);
+}
+
 module bottom() {
   difference() {
     union() {
       difference() {
-        rounded_prism([outer_x, outer_y, bottom_z], corner_r);
+        rounded_bottom_prism([outer_x, outer_y, bottom_z], corner_r, bottom_edge_r);
         translate([wall, wall, floor_t])
           rounded_prism([
             outer_x - 2 * wall,
@@ -518,46 +666,59 @@ module bottom() {
           ], corner_r - wall);
         student_cutouts();
         partner_cutouts();
+        end_cutouts();
       }
       corner_bosses();
       student_marks();
       partner_marks();
+      end_marks();
       student_jack_hardware();
       partner_jack_hardware();
       button_backing(minus_x, control_z);
       button_backing(plus_x, control_z);
       button_backing(device_x, control_z);
-      ring_tie();
     }
     corner_pilots();
   }
 }
 
-// Two posts and a bar on the floor, under the lid cable port.
-module ring_tie() {
-  span = 16;
-  y = 76;
-  x0 = ring_port_x - span / 2;
-  h = 8;
-  for (dx = [0, span])
-    translate([x0 + dx, y, floor_t - 0.2])
-      cylinder(h = h, d = 4.2, $fn = 24);
-  translate([x0, y - 1.5, floor_t + h - 2.6])
-    cube([span, 3, 2.6]);
+// Triangular prism along +X. The right angle is the near top edge. +Y and -Z
+// are the legs, so the cut removes the outside top corner of a lip.
+module lip_bevel(length, c) {
+  hull() {
+    cube([length, 0.02, 0.02]);
+    translate([0, c, 0])
+      cube([length, 0.02, 0.02]);
+    translate([0, 0, -c])
+      cube([length, 0.02, 0.02]);
+  }
 }
 
 module lid_lip() {
   ox = outer_x - 2 * (wall + fit_gap);
   oy = outer_y - 2 * (wall + fit_gap);
+  top = lip_h + 0.2;
   translate([wall + fit_gap, wall + fit_gap, lid_t - 0.2])
     difference() {
-      cube([ox, oy, lip_h + 0.2]);
+      cube([ox, oy, top]);
       translate([lip_t, lip_t, -1])
         cube([ox - 2 * lip_t, oy - 2 * lip_t, lip_h + 2]);
       for (px = [0, ox - lip_notch])
         for (py = [0, oy - lip_notch])
           translate([px, py, -1])
             cube([lip_notch, lip_notch, lip_h + 2]);
+      // Free edge is +Z. Bevel the outside so the lip finds the opening.
+      translate([0, 0, top])
+        lip_bevel(ox, lip_lead);
+      translate([0, oy, top])
+        mirror([0, 1, 0])
+          lip_bevel(ox, lip_lead);
+      translate([0, oy, top])
+        rotate([0, 0, -90])
+          lip_bevel(oy, lip_lead);
+      translate([ox, 0, top])
+        rotate([0, 0, 90])
+          lip_bevel(oy, lip_lead);
     }
 }
 
@@ -639,27 +800,102 @@ assert(cord_hole_d < jack_d, "cord opening must leave a shoulder on the jack end
 assert(cradle_end_gap > 0, "opposite jack cradles collide");
 assert(corner_r - wall >= 2, "inner corner must stay printable");
 assert(
-  corner_r + 2 < sd_x - sd_w / 2,
-  "corner radius must stay clear of the microSD slot"
+  bottom_edge_r + 0.3 < wall && corner_r > 2 * bottom_edge_r,
+  "bottom edge radius must leave a flat wall and fit the vertical corner"
+);
+assert(boss_floor >= 1.5, "boss needs a floor under the pilot");
+assert(boss_top_gap >= 0.3, "boss must stay below the rim so the lid seats on the wall");
+assert(
+  sqrt(
+    pow(wall + fit_gap + lip_notch - boss_inset, 2)
+    + pow(wall + fit_gap + lip_t - boss_inset, 2)
+  ) - boss_od / 2 >= 1.5,
+  "lid lip must clear the corner boss"
+);
+assert(lip_lead >= 0.6 && lip_lead < lip_t && lip_lead < lip_h / 2, "lip lead-in must ease entry and leave a straight section");
+assert(
+  bottom_z - lip_h > toy_z + jack_id / 2 + 2,
+  "lid lip must clear the toy jack cradles"
 );
 assert(
-  partner_word_x(178, 5) + braille_dot_r + 0.5 < outer_x - corner_r,
+  corner_nub_reach() + nub_d / 2 < corner_r - 0.2,
+  "corner nub must stay inside the outer skin"
+);
+assert(
+  corner_nub_reach() - nub_d / 2 > corner_r - wall,
+  "corner nub must sit in the wall"
+);
+assert(boss_run >= boss_far(), "boss runout overhangs more than 45 degrees");
+assert(
+  boss_straight_z() - boss_run > floor_t + 10,
+  "boss runout must stay clear of the floor"
+);
+assert(
+  partner_word_x(minus_x, 5) + braille_dot_r + 0.5 < outer_x - corner_r,
   "minus braille must stay on the flat partner wall"
+);
+assert(
+  partner_word_x(rocker_x, 5) - 4 * braille_cell_spacing - braille_dot_spacing - braille_dot_r
+    > corner_r,
+  "power braille must stay on the flat partner wall"
 );
 assert(
   wall + fit_gap + lip_notch > corner_r + (corner_r - wall) / sqrt(2) + 1,
   "lid lip notch must clear the rounded inner corner"
 );
+assert(zip_d >= 3 && zip_d <= 4, "zip tie hole must be 3 mm to 4 mm");
+assert(zip_seat_drop < zip_d / 2, "zip tie hole must open into the jack channel");
 assert(
-  student_stem_y() - stem_head_d / 2 > wall + jack_body_len,
-  "cord stem intersects the jack body"
+  abs(minus_x - option_x(3)) >= (button_d + jack_outer_w) / 2,
+  "volume-down button hits a toy jack block"
 );
 assert(
-  partner_stem_y() - stem_head_d / 2 > student_stem_y() + stem_head_d / 2,
-  "opposite cord stems collide"
+  abs(plus_x - option_x(2)) >= (button_d + jack_outer_w) / 2 &&
+    abs(plus_x - option_x(1)) >= (button_d + jack_outer_w) / 2,
+  "volume-up button hits a toy jack block"
+);
+assert(
+  abs(device_x - option_x(1)) >= (button_d + jack_outer_w) / 2 &&
+    abs(device_x - option_x(0)) >= (button_d + jack_outer_w) / 2,
+  "device button hits a toy jack block"
+);
+assert(
+  abs(rocker_x - option_x(0)) >= (rocker_d + jack_d) / 2 + 2,
+  "rocker hole hits numeral 1"
+);
+assert(
+  usb_z - usb_h / 2 >= bottom_edge_r + floor_t &&
+    usb_y - usb_w / 2 >= corner_r &&
+    usb_y + usb_w / 2 <= outer_y - corner_r,
+  "power opening must stay on the flat short wall"
+);
+assert(abs(usb_z - 18.5) < 0.001, "power opening center must be 18.5 mm up");
+assert(abs(usb_y - outer_y / 2) < 0.001, "power opening must be centered on the short wall");
+assert(
+  power_text_z - numeral_size / 2 >= usb_top + usb_clear &&
+    power_text_y - power_text_w / 2 >= corner_r &&
+    power_text_y + power_text_w / 2 <= outer_y - corner_r,
+  "power letters must sit above the opening on the flat short wall"
+);
+assert(
+  power_braille_z - 2 * braille_dot_spacing - braille_dot_r
+    >= power_text_z + numeral_size / 2 + usb_clear &&
+    power_braille_z + braille_dot_r < bottom_z - 1 &&
+    power_braille_y + braille_dot_r <= outer_y - corner_r &&
+    power_braille_y - (word_w(5) - braille_dot_d) - braille_dot_r >= corner_r,
+  "power braille must sit above the letters on the flat short wall"
 );
 echo(cradle_end_gap = cradle_end_gap);
 echo(cord_hole_d = cord_hole_d);
-echo(stem_gap = partner_stem_y() - student_stem_y() - stem_head_d);
+echo(usb_y = usb_y);
+echo(usb_z = usb_z);
+echo(plus_x = plus_x);
+echo(plus_from_partner_left = outer_x - plus_x);
+echo(power_text_y = power_text_y);
+echo(power_text_z = power_text_z);
+echo(power_braille_y = power_braille_y);
+echo(power_braille_z = power_braille_z);
+echo(device_x = device_x);
+echo(rocker_x = rocker_x);
 
 enclosure();

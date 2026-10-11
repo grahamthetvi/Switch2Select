@@ -36,16 +36,17 @@ Build in the order below. Flash the board before you close the box. Keep the pow
 - USB power bank or 5 V USB adapter
 - Insulated hookup wire
 - Four small zip ties, or a dot of hot glue, to keep the rings in their pockets
+- Nine small zip ties, one around each 3.5 mm jack
 - PLA or PETG
 - Four M3 screws, about 8 mm to 12 mm long, for the lid
 - For the full stand: four M3×20 mm screws and four M3 nuts, to bolt the cap and the plate through the lid; four M3×6 mm screws, for the two rail extensions; two M3×10 mm screws, for the sliding side rails; two M3×12 mm screws and two M3 nuts, to join the card halves; two M3×12 mm screws and two M3 nuts, for the rear feet
 - For the simple stand: four M3×10 mm screws and four M3 nuts, to bolt the cradle through the lid; two M3×6 mm screws, for the side stops
 
-The enclosure corners are drilled for the lid screws. The lid holes are 3.4 mm clearance. Each bottom boss has a 2.8 mm pilot, 10 mm deep. On the full stand, the extension screws and the rail screws form their own threads in 2.8 mm pilots. On the simple stand, each side-stop screw forms its own thread in the stop and presses on the lip. The screws that bolt a stand through the lid use nuts on the underside of the lid.
+The enclosure corners are drilled for the lid screws. The lid holes are 3.4 mm clearance. Each bottom boss has a 2.8 mm pilot, 10 mm deep, with 2 mm of plastic under the hole so the screw stays blind. The top of the boss is 0.4 mm below the rim, so the lid bears on the wall. The boss is only that top section. It is fused into the corner walls, and below the pilot it slopes down into the corner. On the full stand, the extension screws and the rail screws form their own threads in 2.8 mm pilots. On the simple stand, each side-stop screw forms its own thread in the stop and presses on the lip. The screws that bolt a stand through the lid use nuts on the underside of the lid.
 
 ## Print the enclosure
 
-The assembled box is 200 mm by 140 mm by 55 mm, with 2.4 mm walls. The outside vertical corners have a 6 mm radius. On the flat faces the wall is still 2.4 mm. Raised numerals and marks stand 0.8 mm off the walls. Braille dots stand 0.9 mm off the walls, so a finished bottom measures about 141.8 mm front to back. Print two parts:
+The assembled box is 200 mm by 140 mm by 55 mm, with 2.4 mm walls. The outside vertical corners have a 6 mm radius. The outside bottom edges have a 2 mm radius. On the flat faces the wall is still 2.4 mm. Raised numerals and marks stand 0.8 mm off the walls. Braille dots stand 0.9 mm off the walls, so a finished bottom measures about 141.8 mm front to back. Print two parts:
 
 - `enclosure/switch2select-bottom.stl`
 - `enclosure/switch2select-lid.stl`
@@ -54,26 +55,26 @@ Those files were exported from `enclosure/switch2select.scad`. To export them yo
 
 The two long walls are different. Look at the holes before you wire anything.
 
-The student wall has four 9.1 mm jack holes in a row and one more 9.1 mm jack centered on the lower row. There is no lamp above those jacks. Input holes and output holes are the same size, so the female jack can be pushed in. On the inside of the wall, a cradle 27.3 mm deep holds the whole jack cylinder. A shoulder at the back of the cradle stops that cylinder, and a 7.0 mm hole through the shoulder (a 6.6 mm cord plus 0.4 mm clearance) lets the lead leave the back of the jack. A stem stands just past that hole, beside the cord path, so the lead can be wrapped after it leaves the cylinder and a pull does not yank the jack out. Raised numerals 1, 2, 3, and 4 sit beside the upper jacks. Grade 1 braille for 1, 2, 3, and 4 sits on the other side of those jacks. The center jack is the scan input. The braille word scan sits under it. Braille dots are 0.9 mm high and 1.6 mm across, with 2.5 mm between dot centers in a cell and 6.5 mm between cells. Facing this wall, the four option jacks run left to right as 1, 2, 3, 4. Their centers are 40 mm, 80 mm, 120 mm, and 160 mm from the left end. Input jacks are 28 mm up from the outside bottom. The scan jack is 16 mm up, at the middle of the wall (100 mm from either end).
+The student wall has four 9.1 mm jack holes in a row and one more 9.1 mm jack centered on the lower row. There is no lamp above those jacks. Input holes and output holes are the same size, so the female jack can be pushed in. On the inside of the wall, a cradle 27.3 mm deep holds the whole jack cylinder. A shoulder at the back of the cradle stops that cylinder. The lead leaves through a 7.0 mm passage in that shoulder (a 6.6 mm cord plus 0.4 mm clearance). The passage is open at the top, so the lead drops in from above. A 4 mm hole crosses the cradle just under the jack and opens into the channel. A small zip tie through that hole loops the jack body. The tie crosses the plug axis, so a push or a pull does not slide the jack out of the cradle. Raised numerals 1, 2, 3, and 4 sit beside the upper jacks. Grade 1 braille for 1, 2, 3, and 4 sits on the other side of those jacks. The center jack is the scan input. The braille word scan sits under it. Braille dots are 0.9 mm high and 1.6 mm across, with 2.5 mm between dot centers in a cell and 6.5 mm between cells. Facing this wall, the four option jacks run left to right as 1, 2, 3, 4. Their centers are 40 mm, 80 mm, 120 mm, and 160 mm from the left end. Input jacks are 28 mm up from the outside bottom. The scan jack is 16 mm up, at the middle of the wall (100 mm from either end).
 
-The partner wall has four 9.1 mm toy-jack holes with the same 27.3 mm cradle, cord hole, and cord stem, and raised numerals 1, 2, 3, and 4. Grade 1 braille for 1, 2, 3, and 4 sits beside those jacks, on the side opposite the numeral. Numeral 1 is at the same end of the box as numeral 1 on the student wall. Toy jacks are 40 mm up from the outside bottom. The lower row, left to right when you face this wall, is:
+The partner wall has four 9.1 mm toy-jack holes with the same 27.3 mm cradle, open cord passage, and 4 mm zip-tie hole under the jack, and raised numerals 1, 2, 3, and 4. Grade 1 braille for 1, 2, 3, and 4 sits beside those jacks, on the side opposite the numeral. Numeral 1 is at the same end of the box as numeral 1 on the student wall. Toy jacks are 40 mm up from the outside bottom. Their centers are 40 mm, 80 mm, 120 mm, and 160 mm from the left end when you face the student wall, so when you face this wall the order is 4, 3, 2, 1.
 
-- Volume down, a 12.0 mm hole (an 11.8 mm button plus 0.2 mm clearance) with a minus mark, 16 mm up. A 9 mm square backing sits 7.55 mm behind the inner face of the wall. Braille for the word minus is under the hole.
-- Volume up, the same 12.0 mm hole, 9 mm square backing, and plus mark, 16 mm up. Braille for the word plus is under the hole.
-- Device, the same 12.0 mm hole and 9 mm square backing, with a square mark, 16 mm up. Braille for the word use is under the hole. This button does not change the volume and it does not pulse a toy.
-- Power rocker, a 20 mm hole, 16 mm up. The body behind the panel is about 25.4 mm deep, with snap wings and two terminals, and the inside stays clear so that body can sit in the box. Braille for the word power sits between this hole and the toy jacks.
-- USB cable slot, 12 mm wide by 8 mm tall, centered 16 mm up
-- microSD slot, 16 mm wide by 3 mm tall, centered 16 mm up
+The three buttons sit in the gaps between those jacks, one in each gap, 16 mm up. Each hole is 12.0 mm (an 11.8 mm button plus 0.2 mm clearance). A 9 mm square backing sits 7.55 mm behind the inner face. Left to right when you face this wall:
 
-The lid has a speaker grill in the center. The grilled area is 42 mm by 32 mm, with seven slots, each 3 mm wide. Behind the grill, toward the partner edge, a 12 mm by 10 mm port lets the ring cable into the box. Four 3.4 mm holes in a row take the stand bolts. The lid lip is sized with a 0.4 mm gap inside the bottom rim. If a lid will not seat, sand the lip lightly until it drops in.
+- Volume down, centered between numerals 4 and 3, 60 mm from the left end of this wall. A minus mark is above the hole. Braille for the word minus is under the hole.
+- Volume up, centered between numerals 3 and 2, 100 mm from the left end of this wall. A plus mark is above the hole. Braille for the word plus is under the hole.
+- Device, centered between numerals 2 and 1, 140 mm from the left end of this wall. A square mark is above the hole. Braille for the word use is under the hole. This button does not change the volume and it does not pulse a toy.
+- Power rocker, a 20 mm hole, 16 mm up, 178 mm from the left end of this wall. That is past numeral 1, not in a jack gap. The center gap is the volume-up button. The body behind the panel is about 25.4 mm deep, with snap wings and two terminals, and the inside stays clear so that body can sit in the box. Braille for the word power sits between this hole and the toy jacks.
 
-Inside, on the floor under that port, two posts and a bar are a tie point for the ring cable.
+The short wall at the numeral 1 end has the power opening. That is the left end when you face the student wall. The opening is 13.2 mm wide and 8 mm tall. Its center is 18.5 mm up from the outside bottom and in the middle of this wall, 70 mm from either long wall. Raised letters spelling power sit above the opening. Grade 1 braille for the word power sits above those letters. The rocker keeps its own power braille on the partner wall. The other short wall is solid. There is no microSD slot in a wall. The card stays in the module inside the box. Take the lid off to change it. The power lead runs from this opening to the rocker. The rocker switches the red wire.
+
+The lid has a speaker grill in the center. The grilled area is 42 mm by 32 mm, with seven slots, each 3 mm wide. Behind the grill, toward the partner edge, a 12 mm by 10 mm port lets the ring cable into the box. Four 3.4 mm holes in a row take the stand bolts. The lid lip is sized with a 0.4 mm gap inside the bottom rim. The outside of the lip is chamfered 0.8 mm so it finds that opening, then the straight section takes the 0.4 mm gap. If a lid will not seat, sand the straight part of the lip lightly until it drops in.
 
 The enclosure, the stand, and the wiring are CERN-OHL-W v2. If you share a modified enclosure, stand, or wiring layout, release those hardware changes under the same license. The full terms are in the License section.
 
 ## Print the stand
 
-The lid has four 3.4 mm holes in a row behind the speaker grill. The full stand and the simple stand both bolt through those holes. Print one stand. The student looks at the screen, or at the cards on the full stand. The partner wall stays open, so the toy plugs, the buttons, the rocker, the USB lead, and the microSD card are still reachable.
+The lid has four 3.4 mm holes in a row behind the speaker grill. The full stand and the simple stand both bolt through those holes. Print one stand. The student looks at the screen, or at the cards on the full stand. The partner wall stays open, so the toy plugs, the buttons, and the rocker are still reachable. The USB lead leaves through the short wall at the numeral 1 end. There is no microSD slot in the wall. Load the card into the module before the lid goes on.
 
 ### Full stand
 
@@ -113,9 +114,9 @@ The cards are 3 inch by 5 inch (76.2 mm by 127 mm), stood up, four across. The s
 
 Behind each card is a round seat 23.8 mm across and 2.4 mm deep, open on the back, with a 10 mm hole through to the card. That is the pocket for a 23 mm WS2812B ring. The 10 mm hole is smaller than the ring, so the ring cannot fall toward the student. Two 2.6 mm holes beside the seat take a zip tie across the back of the ring. A trench on the back carries the wires to the notch in the plate, then through the port in the cap and the lid.
 
-Bolt the extensions to the plate with the four M3×6 screws. The thin lap on each extension sits in the recess at the end of the plate foot. The hole under the lap is about 7 mm deep and ends inside the foot, and an M3×6 screw draws the lap down. Bolt the cap and the plate foot to the lid with the four M3×20 screws and nuts. The nuts are on the underside of the lid, so do this before you screw the lid onto the box, or take the lid off to reach them. The four holes are in a row behind the speaker grill. The word FRONT on the cap points at the student. Bolt a foot to each rear tab of the cap. The leg reaches the table, 176 mm from the student edge. Fit both feet. The center of a 10.2 inch iPad sits about 5 mm behind the box, and the center of a 13 inch iPad sits about 13 mm behind the box. The feet carry that weight.
+Bolt the extensions to the plate with the four M3×6 screws. The thin lap on each extension sits in the recess at the end of the plate foot. The hole under the lap is about 7 mm deep and ends inside the foot, and an M3×6 screw draws the lap down. Bolt the cap and the plate foot to the lid with the four M3×20 screws and nuts. The nuts are on the underside of the lid, so do this before you screw the lid onto the box, or take the lid off to reach them. The four holes are in a row behind the speaker grill. The word FRONT on the cap points at the student. Each corner of the cap has a 6.2 mm hole so the lid screw can pass through and its head can sit on the lid. The two partner-wall corners also have a 12 mm well through the plate foot and the extension lap, because those screws are under the foot. Bolt a foot to each rear tab of the cap. The leg reaches the table, 176 mm from the student edge. Fit both feet. The center of a 10.2 inch iPad sits about 5 mm behind the box, and the center of a 13 inch iPad sits about 13 mm behind the box. The feet carry that weight.
 
-Slide a side rail onto each end of the ledge, with the extensions already bolted on, and tighten its screw until the rail stays put. For an iPad, set the rails to the width and sit the iPad on the ledge, long edge down, screen toward the student. For cards, screw the two halves together with the two M3×12 screws and nuts. The nuts sit in the hex pockets on the back of the half marked 1 and 2. Press each ring into a pocket from the back, LEDs toward the card, and tie or glue it. Seat the panel in the ledge and bring the rails in against its sides. The cable drops through the port. Tie it to the bar on the floor of the box.
+Slide a side rail onto each end of the ledge, with the extensions already bolted on, and tighten its screw until the rail stays put. For an iPad, set the rails to the width and sit the iPad on the ledge, long edge down, screen toward the student. For cards, screw the two halves together with the two M3×12 screws and nuts. The nuts sit in the hex pockets on the back of the half marked 1 and 2. Press each ring into a pocket from the back, LEDs toward the card, and tie or glue it. Seat the panel in the ledge and bring the rails in against its sides. The cable drops through the port.
 
 ### Simple stand
 
@@ -180,11 +181,11 @@ Other connections:
 
 GPIO 34, 35, 36, and 39 are input-only. They have no internal pull-up. Each one needs the external 10k to 3.3 V. The scan, volume, and device pins use the ESP32 internal pull-ups, so they do not get a 10k resistor.
 
-A press is active-low. The firmware accepts it after the pin has been low and stable for 40 ms. Holding a switch does not repeat the action.
+A press is active-low. The firmware accepts it after the pin has been low and stable for 40 ms. Holding a direct switch, a volume button, or the device button does not repeat that press. Holding the scan switch does not repeat a selection in auto mode. In step mode, holding the scan switch rotates the highlight, as described under Using the device.
 
 ## Prepare the microSD card
 
-Format the card FAT32. Copy the files and folders that are inside `sd-card` so that `config.json` sits at the root of the card, next to `www`, `media`, and `games`.
+Load the card into the SPI module inside the box before the lid goes on. Format the card FAT32. Copy the files and folders that are inside `sd-card` so that `config.json` sits at the root of the card, next to `www`, `media`, and `games`.
 
 These paths are part of the project:
 
@@ -209,7 +210,7 @@ The device reads `/config.json` at startup. The setup page can write that file a
 Fields:
 
 - `scanMode` is `"auto"` or `"step"`. Any value other than `"step"` is treated as auto. Auto is the sample and the fallback.
-- `scanDelayMs` is how long, in milliseconds, the highlight stays on one option during auto scan. A missing or zero value becomes 3000.
+- `scanDelayMs` is how long, in milliseconds, the highlight stays on one option. In auto mode the highlight moves on its own after that time. In step mode the highlight moves on that same interval while the scan switch is held. A missing or zero value becomes 3000.
 - `outputPulseMs` is how long, in milliseconds, a toy contact stays closed. A missing value becomes 1000. The sample uses 1000, about one second.
 - `volume` is an integer from 0 to 9. The sample uses 5. The volume buttons and the setup page update this field on the card when the card is mounted. Values below 0 or above 9 are clamped.
 - `ringLevel` is an integer from 0 to 9. The sample uses 4. It sets how bright the card ring is. 0 leaves the rings off. The device button does not change it. The setup page changes it. A file edit is used after the rocker is turned off and on. A missing value becomes 4.
@@ -260,7 +261,7 @@ Switched +5 V goes to:
 - DFR0760 5 V
 - The card rings' 5 V pads, with the 1000 µF capacitor across that pair at the first ring
 
-Program the board from the DevKit USB socket with this power cable unplugged, so the computer and the power bank are not both feeding 5 V. The enclosure slot is the exit for the power cable. It is 12 mm by 8 mm.
+Program the board from the DevKit USB socket with this power cable unplugged, so the computer and the power bank are not both feeding 5 V. The enclosure opening is the exit for the power cable. It is on the short wall at the numeral 1 end, 13.2 mm by 8 mm, centered on that wall (70 mm from either long wall) and 18.5 mm up from the outside bottom. Inside the box the cable runs to the rocker.
 
 The 10k pull-ups use the ESP32 pin labeled 3.3V. They do not use 5 V.
 
@@ -324,7 +325,7 @@ D/T is the module's transmit pin. C/T is the module's receive pin. The firmware 
 - SCK to GPIO 18
 - GND to the common ground
 
-Power the SPI module from the supply printed on that board. A module marked for 5 V, with its own regulator, uses the switched 5 V rail. A 3.3 V module uses the ESP32 3.3 V pin. Seat the module so a card pushed through the 16 mm by 3 mm slot enters the socket.
+Power the SPI module from the supply printed on that board. A module marked for 5 V, with its own regulator, uses the switched 5 V rail. A 3.3 V module uses the ESP32 3.3 V pin. The module sits inside the box. There is no card slot in the wall. Load the card before the lid goes on.
 
 ### Pins to leave alone
 
@@ -332,15 +333,15 @@ Do not use GPIO 0, 2, 12, 25, or 26. Do not land a toy jack, a relay contact, or
 
 ## Assembly
 
-1. Confirm the student wall by the single lower jack with the braille word scan under it. There are no lamp holes on that wall. Confirm the partner wall by the 20 mm rocker hole, the three button holes (minus, plus, and the square mark), and the two slots.
-2. Push the four input jacks and the scan jack into the 9.1 mm holes until each 27.3 mm cylinder sits in its cradle against the back shoulder. Feed each lead out through the cord hole and wrap it around the stem just beyond that hole.
-3. Push the four toy jacks into the partner-wall holes the same way, each beside its matching numeral, and wrap those leads on the stems beyond the cord holes. Seat each of the three buttons in its hole so it meets the 9 mm square backing. Mount the 20 mm rocker in the lower row. Leave the space behind the rocker clear for the switch body and its two terminals.
-4. Route the USB power cable out through the 12 mm by 8 mm slot.
-5. Place the microSD socket behind the 16 mm by 3 mm slot.
-6. Place the DFR0760 speaker on the inside of the lid, facing the grill. Bolt the stand to the lid before this lid goes back on the box, so you can reach the nuts. On the full stand, that is the cap and the plate with the four M3×20 screws. On the simple stand, that is the cradle with the four M3×10 screws, heads in the counterbores. The ring cable comes through the 12 mm by 10 mm port and ties to the bar on the floor. The simple cradle leaves that port open.
+1. Confirm the student wall by the single lower jack with the braille word scan under it. There are no lamp holes on that wall. Confirm the partner wall by the 20 mm rocker hole and the three button holes (minus, plus, and the square mark). Confirm the power opening on the short wall at the numeral 1 end, centered on that wall and 18.5 mm up. Raised letters spelling power sit above the opening, and braille for power sits above those letters.
+2. Push the four input jacks and the scan jack into the 9.1 mm holes until each 27.3 mm cylinder sits in its cradle against the back shoulder. Drop each lead in through the open top of the cord passage. Put a small zip tie through the 4 mm hole under the jack and cinch it around the jack body.
+3. Push the four toy jacks into the partner-wall holes the same way, each beside its matching numeral, and zip-tie those jack bodies through the holes under them. Seat each of the three buttons in the gap between two toy jacks so it meets the 9 mm square backing. Mount the 20 mm rocker past numeral 1. Leave the space behind the rocker clear for the switch body and its two terminals.
+4. Place the ESP32 inside the box. Route the power cable out through the 13.2 mm by 8 mm opening on the short wall at the numeral 1 end.
+5. Place the SPI microSD module inside the box and load the card before the lid goes on. There is no card slot in the wall.
+6. Place the DFR0760 speaker on the inside of the lid, facing the grill. Bolt the stand to the lid before this lid goes back on the box, so you can reach the nuts. On the full stand, that is the cap and the plate with the four M3×20 screws. On the simple stand, that is the cradle with the four M3×10 screws, heads in the counterbores. The ring cable comes through the 12 mm by 10 mm port. The simple cradle leaves that port open.
 7. Label the outside of the student wall **Inputs** and the outside of the partner wall **Toys**. The raised numerals show which channel is which. The written labels are there so the two jack types are not swapped later.
-8. Insert the FAT32 card.
-9. Set the lid on the rim and fasten the four M3 screws through the lid into the corner bosses. The stand, if you bolted it to the lid, comes with the lid.
+8. Insert the FAT32 card into the module inside the box.
+9. Set the lid on the rim and fasten the four M3 screws through the lid into the corner bosses. The screw heads sit on the lid. On the full stand they pass through the holes in the cap, and the two partner-wall screws also pass through the wells in the plate foot. The stand, if you bolted it to the lid, comes with the lid.
 
 ## Power-on test
 
@@ -382,7 +383,7 @@ There are four options, numbered 1 to 4. Speech names the port that is highlight
 
 **Auto** is the default (`scanMode` set to `"auto"`). The highlight moves on its own every `scanDelayMs` (3 seconds on the sample card). The scan switch selects the option that is in use. A direct switch selects that option immediately, in auto mode and in step mode.
 
-**Step** (`scanMode` set to `"step"`) does not move the highlight by itself. The scan switch only moves the highlight to the next option. It does not select and it does not pulse a toy. The four direct switches still select.
+**Step** (`scanMode` set to `"step"`) does not move the highlight until the scan switch is held. A hold is 400 ms. While the switch stays down, the highlight moves to the next option when the hold begins, then again every `scanDelayMs` (3 seconds on the sample card). Letting go stops on the option that is lit. Letting go does not select and it does not pulse a toy. A press released before 400 ms selects the option that is lit. That select does the same work as pressing that option's direct jack, including the toy pulse when `pulseOutput` is true, the speech, the ring, and the page. After a hold, let go, then press and release once to select. The four direct switches still select.
 
 A selection always updates the ring and the page. It closes that option's toy contact only when `pulseOutput` is true, and only for `outputPulseMs`.
 

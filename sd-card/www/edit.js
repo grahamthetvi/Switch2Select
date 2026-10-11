@@ -6,7 +6,6 @@
   var choicesRoot = document.getElementById("choices");
   var statusNode = document.getElementById("status");
   var saveButtons = form.querySelectorAll("button.primary");
-  var delayWrap = document.getElementById("delay-wrap");
   var delayInput = document.getElementById("scan-delay");
   var pulseInput = document.getElementById("pulse");
   var volumeInput = document.getElementById("volume");
@@ -108,10 +107,6 @@
     var next = clampScale(level);
     ringInput.value = String(next);
     ringValue.textContent = ringText(next);
-  }
-
-  function syncDelay() {
-    delayWrap.hidden = scanStep.checked;
   }
 
   function addSwatches(input, colors) {
@@ -611,7 +606,7 @@
 
   function timingProblem() {
     var seconds = Number(delayInput.value);
-    if (!scanStep.checked && (!isFinite(seconds) || seconds < 1 || seconds > 30)) {
+    if (!isFinite(seconds) || seconds < 1 || seconds > 30) {
       return "Seconds on each choice needs to be from 1 to 30.";
     }
     var pulse = Number(pulseInput.value);
@@ -729,7 +724,6 @@
     pulseInput.value = msToSeconds(data.outputPulseMs, 1000);
     setVolumeField(data.volume == null ? 5 : data.volume);
     setRingField(data.ringLevel == null ? 4 : data.ringLevel);
-    syncDelay();
     choicesRoot.textContent = "";
     choices = [];
     var i;
@@ -741,8 +735,6 @@
     volumeTouched = false;
   }
 
-  scanAuto.addEventListener("change", syncDelay);
-  scanStep.addEventListener("change", syncDelay);
   volumeInput.addEventListener("input", function () {
     volumeTouched = true;
     volumeValue.textContent = String(clampScale(volumeInput.value));
